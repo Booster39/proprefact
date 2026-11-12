@@ -1,0 +1,17 @@
+<header>
+  <strong class="marque">ProPreFact</strong>
+  @if (session.connecte()) {
+    <nav>
+      <a routerLink="/factures" routerLinkActive="actif">Factures</a>
+      <a routerLink="/contrats" routerLinkActive="actif">Contrats</a>
+      <a routerLink="/clients" routerLinkActive="actif">Clients et sites</a>
+    </nav>
+    <span class="compte">
+      <span class="societe">{{ session.raisonSociale() }}</span>
+      <button class="secondaire petit" (click)="deconnexion()">Déconnexion</button>
+    </span>
+  }
+</header>
+<main>
+  <router-outlet />
+</main>

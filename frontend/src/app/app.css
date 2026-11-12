@@ -1,0 +1,11 @@
+header {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.25rem;
+  padding: .7rem 1rem; background: var(--carte); border-bottom: 1px solid var(--bord);
+}
+.marque { color: var(--accent); font-size: 1.1rem; }
+nav { display: flex; gap: .25rem; flex-wrap: wrap; }
+nav a { padding: .3rem .7rem; border-radius: 6px; color: var(--texte); text-decoration: none; }
+nav a.actif { background: var(--accent); color: var(--accent-texte); }
+.compte { margin-left: auto; display: flex; align-items: center; gap: .6rem; }
+.societe { color: var(--discret); font-size: .9rem; }
+main { max-width: 1050px; margin: 0 auto; padding: 1rem; }

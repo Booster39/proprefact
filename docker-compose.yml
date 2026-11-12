@@ -1,0 +1,14 @@
+# Base de données de développement : docker compose up -d
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: proprefact
+      POSTGRES_USER: proprefact
+      POSTGRES_PASSWORD: proprefact
+    ports:
+      - "5432:5432"
+    volumes:
+      - donnees:/var/lib/postgresql/data
+volumes:
+  donnees:

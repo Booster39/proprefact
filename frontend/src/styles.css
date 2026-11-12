@@ -1,0 +1,57 @@
+:root {
+  --fond: #f5f6f8;
+  --carte: #ffffff;
+  --texte: #1c2430;
+  --discret: #64707f;
+  --bord: #dde1e7;
+  --accent: #0b6e69;
+  --accent-texte: #ffffff;
+  --alerte: #b3261e;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+h1 { font-size: 1.4rem; margin: 0 0 1rem; }
+h2 { font-size: 1.05rem; margin: 0 0 .75rem; }
+.carte {
+  background: var(--carte);
+  border: 1px solid var(--bord);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+.grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .75rem; }
+label { display: block; font-size: .85rem; color: var(--discret); }
+input, select {
+  display: block; width: 100%; margin-top: .2rem; padding: .5rem .6rem;
+  border: 1px solid var(--bord); border-radius: 6px; font: inherit; background: #fff; color: inherit;
+}
+input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+label.case { display: flex; align-items: center; gap: .5rem; color: var(--texte); }
+label.case input { width: auto; margin: 0; }
+button {
+  padding: .5rem .9rem; border: 1px solid var(--accent); border-radius: 6px;
+  background: var(--accent); color: var(--accent-texte); font: inherit; cursor: pointer;
+}
+button.secondaire { background: transparent; color: var(--accent); }
+button.petit { padding: .25rem .55rem; font-size: .85rem; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.actions { display: flex; flex-wrap: wrap; gap: .4rem; align-items: end; margin-top: .75rem; }
+.defilement { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid var(--bord); white-space: nowrap; }
+th { font-size: .8rem; color: var(--discret); font-weight: 600; }
+td.nombre, th.nombre { text-align: right; font-variant-numeric: tabular-nums; }
+td.large { white-space: normal; }
+.erreur { color: var(--alerte); margin: .5rem 0; }
+.info { color: var(--discret); margin: .5rem 0; }
+.etiquette { display: inline-block; padding: .05rem .5rem; border-radius: 999px; font-size: .78rem; border: 1px solid var(--bord); }
+.etiquette.BROUILLON { color: var(--discret); }
+.etiquette.VALIDEE { color: #8a5a00; border-color: #e3c98f; background: #fff7e3; }
+.etiquette.DEPOSEE { color: #1d4f91; border-color: #b4cdee; background: #eef5ff; }
+.etiquette.PAYEE { color: #1b6b3a; border-color: #a9d8ba; background: #ebf8ef; }

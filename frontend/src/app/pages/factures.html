@@ -1,0 +1,73 @@
+<h1>Factures</h1>
+@if (erreur()) { <p class="erreur" role="alert">{{ erreur() }}</p> }
+@if (message()) { <p class="info" role="status">{{ message() }}</p> }
+
+<div class="carte">
+  <h2>Facturation mensuelle des contrats</h2>
+  <div class="actions" style="margin-top: 0">
+    <label>Mois à facturer <input type="month" name="mois" [(ngModel)]="mois" /></label>
+    <button (click)="generer()" [disabled]="!mois">Générer les brouillons</button>
+    <button class="secondaire" (click)="ponctuelle.set(!ponctuelle())">Facture ponctuelle</button>
+  </div>
+
+  @if (ponctuelle()) {
+    <form #form="ngForm" (ngSubmit)="creerPonctuelle(form)" style="margin-top: 1rem">
+      <div class="grille">
+        <label>Client
+          <select name="clientId" [(ngModel)]="clientId" required>
+            <option [ngValue]="null" disabled>Choisir…</option>
+            @for (c of clients(); track c.id) { <option [ngValue]="c.id">{{ c.raisonSociale }}</option> }
+          </select>
+        </label>
+        <label>Désignation <input name="designation" [(ngModel)]="ligne.designation" required placeholder="Remise en état après travaux" /></label>
+        <label>Quantité <input type="number" name="quantite" [(ngModel)]="ligne.quantite" required min="0.001" step="any" /></label>
+        <label>Prix unitaire HT (€) <input type="number" name="prixUnitaireHt" [(ngModel)]="ligne.prixUnitaireHt" required min="0" step="0.01" /></label>
+        <label>TVA (%) <input type="number" name="tauxTva" [(ngModel)]="ligne.tauxTva" required min="0" step="0.1" /></label>
+      </div>
+      <div class="actions"><button type="submit" [disabled]="form.invalid">Créer le brouillon</button></div>
+    </form>
+  }
+</div>
+
+<div class="carte defilement">
+  @if (factures().length === 0) {
+    <p class="info">Aucune facture pour l'instant. Créez des contrats puis générez les brouillons du mois.</p>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th>Numéro</th><th>Client</th><th>Période</th><th>Émise le</th><th>Échéance</th>
+          <th class="nombre">HT</th><th class="nombre">TTC</th><th>Statut</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (f of factures(); track f.id) {
+          <tr>
+            <td>{{ f.numero ?? '—' }}</td>
+            <td>{{ f.client }}</td>
+            <td>{{ f.periode ?? '—' }}</td>
+            <td>{{ dateFr(f.dateEmission) }}</td>
+            <td>{{ dateFr(f.dateEcheance) }}</td>
+            <td class="nombre">{{ montant(f.totalHt) }}</td>
+            <td class="nombre">{{ montant(f.totalTtc) }}</td>
+            <td><span class="etiquette {{ f.statut }}">{{ f.statut === 'BROUILLON' ? 'Brouillon' : f.statut === 'VALIDEE' ? 'Validée' : f.statut === 'DEPOSEE' ? 'Déposée' : 'Payée' }}</span></td>
+            <td>
+              <span style="display: flex; gap: .3rem">
+                @if (f.statut === 'BROUILLON') {
+                  <button class="petit" (click)="action(f, 'valider')">Valider</button>
+                  <button class="secondaire petit" (click)="supprimer(f)">Supprimer</button>
+                } @else {
+                  <button class="secondaire petit" (click)="telecharger(f)">Factur-X</button>
+                }
+                @if (f.statut === 'VALIDEE') { <button class="petit" (click)="action(f, 'deposer')">Déposer</button> }
+                @if (f.statut === 'VALIDEE' || f.statut === 'DEPOSEE') {
+                  <button class="secondaire petit" (click)="action(f, 'payee')">Payée</button>
+                }
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
