@@ -44,14 +44,13 @@ import org.mustangproject.ZUGFeRD.Profiles;
 import org.mustangproject.ZUGFeRD.ZUGFeRDExporterFromA1;
 import org.springframework.stereotype.Service;
 
-import com.proprefact.domain.Client;
-import com.proprefact.domain.Entreprise;
 import com.proprefact.domain.Facture;
 import com.proprefact.domain.LigneFacture;
+import com.proprefact.domain.PartieFacture;
 
 /**
  * Produit la facture au format Factur-X : un PDF lisible (PDF/A-3) qui embarque les mêmes
- * données en XML structuré (profil EN 16931).
+ * données en XML structuré (profil EN 16931). Ne lit que les données figées dans la facture.
  */
 @Service
 public class FacturXService {
@@ -72,16 +71,16 @@ public class FacturXService {
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final float MARGE = 50;
 
-    public byte[] generer(Facture f, Entreprise e) {
+    public byte[] generer(Facture f) {
         try {
-            byte[] pdf = pdfLisible(f, e);
+            byte[] pdf = pdfLisible(f);
             ByteArrayOutputStream sortie = new ByteArrayOutputStream();
             ZUGFeRDExporterFromA1 exporteur = new ZUGFeRDExporterFromA1()
                     .setProducer("ProPreFact")
-                    .setCreator(e.getRaisonSociale())
+                    .setCreator(f.getVendeur().getRaisonSociale())
                     .setProfile(Profiles.getByName("EN16931"))
                     .load(pdf);
-            exporteur.setTransaction(donneesStructurees(f, e));
+            exporteur.setTransaction(donneesStructurees(f));
             exporteur.export(sortie);
             return sortie.toByteArray();
         } catch (IOException ex) {
@@ -91,16 +90,17 @@ public class FacturXService {
 
     // ------------------------------------------------------------------ XML
 
-    Invoice donneesStructurees(Facture f, Entreprise e) {
-        Client c = f.getClient();
+    Invoice donneesStructurees(Facture f) {
+        PartieFacture e = f.getVendeur();
+        PartieFacture c = f.getAcheteur();
         TradeParty vendeur = new TradeParty(e.getRaisonSociale(), e.getAdresse(), e.getCodePostal(), e.getVille(), "FR")
                 .setLegalOrganisation(new LegalOrganisation(e.getSiren(), SCHEMA_SIREN))
                 .addUriUniversalCommunicationID(new SchemedID(SCHEMA_ADRESSE_ELECTRONIQUE, e.getSiren()));
         if (e.getTvaIntra() != null) {
             vendeur.addVATID(e.getTvaIntra());
         }
-        if (e.getIban() != null) {
-            vendeur.addBankDetails(new BankDetails(e.getIban(), e.getBic()));
+        if (f.getVendeurIban() != null) {
+            vendeur.addBankDetails(new BankDetails(f.getVendeurIban(), f.getVendeurBic()));
         }
         TradeParty acheteur = new TradeParty(c.getRaisonSociale(), c.getAdresse(), c.getCodePostal(), c.getVille(), "FR")
                 .setLegalOrganisation(new LegalOrganisation(c.getSiren(), SCHEMA_SIREN))
@@ -124,7 +124,7 @@ public class FacturXService {
             facture.setDetailedDeliveryPeriod(date(mois.atDay(1)), date(mois.atEndOfMonth()));
         }
         // Exigibilité de la TVA : 5 = à la facturation (option débits), 72 = à l'encaissement (régime des services).
-        facture.setVATDueDateTypeCode(e.isOptionTvaDebits() ? "5" : "72");
+        facture.setVATDueDateTypeCode(Boolean.TRUE.equals(f.getVendeurOptionTvaDebits()) ? "5" : "72");
         facture.addNotes(List.of(
                 new IncludedNote(MENTION_PENALITES, SubjectCode.PMD),
                 new IncludedNote(MENTION_INDEMNITE, SubjectCode.PMT),
@@ -151,7 +151,7 @@ public class FacturXService {
     // ------------------------------------------------------------------ PDF
 
     /** PDF/A-1b : polices incorporées, métadonnées XMP et profil de couleur, sans compression d'objets. */
-    private byte[] pdfLisible(Facture f, Entreprise e) throws IOException {
+    private byte[] pdfLisible(Facture f) throws IOException {
         try (PDDocument doc = new PDDocument()) {
             doc.setVersion(1.4f);
             PDFont normal = police(doc, "DejaVuSans.ttf");
@@ -159,7 +159,7 @@ public class FacturXService {
             PDPage page = new PDPage(PDRectangle.A4);
             doc.addPage(page);
             try (PDPageContentStream cs = new PDPageContentStream(doc, page)) {
-                dessiner(new Plume(cs, normal, gras), f, e);
+                dessiner(new Plume(cs, normal, gras), f);
             }
             conformitePdfA(doc, "Facture " + f.getNumero());
             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -168,8 +168,9 @@ public class FacturXService {
         }
     }
 
-    private void dessiner(Plume p, Facture f, Entreprise e) throws IOException {
-        Client c = f.getClient();
+    private void dessiner(Plume p, Facture f) throws IOException {
+        PartieFacture e = f.getVendeur();
+        PartieFacture c = f.getAcheteur();
         float droite = PDRectangle.A4.getWidth() - MARGE;
         float y = 790;
 
@@ -229,10 +230,10 @@ public class FacturXService {
 
         y -= 40;
         List<String> mentions = new ArrayList<>();
-        if (e.getIban() != null) {
-            mentions.add("Règlement par virement – IBAN " + e.getIban() + (e.getBic() != null ? " – BIC " + e.getBic() : ""));
+        if (f.getVendeurIban() != null) {
+            mentions.add("Règlement par virement – IBAN " + f.getVendeurIban() + (f.getVendeurBic() != null ? " – BIC " + f.getVendeurBic() : ""));
         }
-        if (e.isOptionTvaDebits()) {
+        if (Boolean.TRUE.equals(f.getVendeurOptionTvaDebits())) {
             mentions.add("Option pour le paiement de la taxe d'après les débits.");
         }
         mentions.addAll(List.of(MENTION_PENALITES, MENTION_INDEMNITE, MENTION_ESCOMPTE));

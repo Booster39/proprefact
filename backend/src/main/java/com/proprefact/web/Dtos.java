@@ -111,7 +111,8 @@ public final class Dtos {
         }
 
         private static FactureDto de(Facture f, List<LigneDto> lignes) {
-            return new FactureDto(f.getId(), f.getNumero(), f.getStatut(), f.getClient().getId(), f.getClient().getRaisonSociale(),
+            return new FactureDto(f.getId(), f.getNumero(), f.getStatut(), f.getClient().getId(),
+                    f.getAcheteur() != null ? f.getAcheteur().getRaisonSociale() : f.getClient().getRaisonSociale(),
                     f.getDateEmission(), f.getDateEcheance(), f.getPeriode(), f.getTotalHt(), f.getTotalTva(), f.getTotalTtc(), f.getIdDepot(), lignes);
         }
     }

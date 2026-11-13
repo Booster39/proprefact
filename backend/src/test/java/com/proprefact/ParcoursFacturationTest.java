@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -103,6 +104,38 @@ class ParcoursFacturationTest {
     }
 
     @Test
+    void uneFactureValideeNeChangePlusQuandLaFicheClientChange() throws Exception {
+        String jeton = inscrire("fige@fige.test", "666666664", "Propreté Figée");
+        int client = id(envoyer(post("/api/clients"), jeton, """
+                {"raisonSociale":"Ancien Nom SA","siren":"777777772","adresse":"1 rue Ancienne","codePostal":"31000","ville":"Toulouse"}"""));
+        String ligne = """
+                {"clientId":%d,"lignes":[{"designation":"Vitrerie","quantite":1,"prixUnitaireHt":100,"tauxTva":20}]}"""
+                .formatted(client);
+        int brouillon = id(envoyer(post("/api/factures"), jeton, ligne));
+        int validee = id(envoyer(post("/api/factures"), jeton, ligne));
+        envoyer(post("/api/factures/" + validee + "/valider"), jeton, null);
+        byte[] avant = telecharger(validee, jeton);
+
+        envoyer(put("/api/clients/" + client), jeton, """
+                {"raisonSociale":"Nouveau Nom SAS","siren":"888888880","adresse":"9 avenue Neuve","codePostal":"33000","ville":"Bordeaux"}""");
+
+        // Le fichier émis est rendu à l'identique, avec les coordonnées de l'époque.
+        byte[] apres = telecharger(validee, jeton);
+        assertThat(apres).isEqualTo(avant);
+        String xml = new String(new ZUGFeRDImporter(new ByteArrayInputStream(apres)).getRawXML(), StandardCharsets.UTF_8);
+        assertThat(xml).contains("Ancien Nom SA", "777777772", "1 rue Ancienne")
+                .doesNotContain("Nouveau Nom SAS", "888888880");
+        mvc.perform(get("/api/factures/" + validee).header("Authorization", "Bearer " + jeton))
+                .andExpect(jsonPath("$.client").value("Ancien Nom SA"));
+
+        // Le brouillon, lui, prend les coordonnées à jour au moment de sa validation.
+        envoyer(post("/api/factures/" + brouillon + "/valider"), jeton, null);
+        String xmlNouveau = new String(new ZUGFeRDImporter(new ByteArrayInputStream(telecharger(brouillon, jeton)))
+                .getRawXML(), StandardCharsets.UTF_8);
+        assertThat(xmlNouveau).contains("Nouveau Nom SAS", "888888880").doesNotContain("Ancien Nom SA");
+    }
+
+    @Test
     void uneEntrepriseNeVoitPasLesDonneesDUneAutre() throws Exception {
         String jetonA = inscrire("a@a.test", "111111118", "Propreté A");
         String jetonB = inscrire("b@b.test", "222222226", "Propreté B");
@@ -171,6 +204,12 @@ class ParcoursFacturationTest {
         }
         return mvc.perform(requete).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+    }
+
+    private byte[] telecharger(int facture, String jeton) throws Exception {
+        return mvc.perform(get("/api/factures/" + facture + "/facturx").header("Authorization", "Bearer " + jeton))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsByteArray();
     }
 
     private static int id(String json) {

@@ -11,6 +11,9 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import jakarta.persistence.CascadeType;
+import org.hibernate.annotations.EmbeddedColumnNaming;
+
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -39,9 +42,29 @@ public class Facture extends TenantEntity {
     /** Identifiant renvoyé par la plateforme agréée lors du dépôt. */
     private String idDepot;
 
+    /** Copies figées à la validation ; vides tant que la facture est un brouillon. */
+    @Embedded
+    @EmbeddedColumnNaming("vendeur_%s")
+    private PartieFacture vendeur;
+    @Embedded
+    @EmbeddedColumnNaming("acheteur_%s")
+    private PartieFacture acheteur;
+    private String vendeurIban;
+    private String vendeurBic;
+    private Boolean vendeurOptionTvaDebits;
+
     @OneToMany(mappedBy = "facture", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id")
     private List<LigneFacture> lignes = new ArrayList<>();
+
+    /** Recopie les coordonnées actuelles du vendeur et de l'acheteur : la facture n'en dépend plus ensuite. */
+    public void figerParties(Entreprise entreprise) {
+        vendeur = PartieFacture.de(entreprise);
+        vendeurIban = entreprise.getIban();
+        vendeurBic = entreprise.getBic();
+        vendeurOptionTvaDebits = entreprise.isOptionTvaDebits();
+        acheteur = PartieFacture.de(client);
+    }
 
     public void ajouter(LigneFacture ligne) {
         ligne.setFacture(this);
