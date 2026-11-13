@@ -39,6 +39,8 @@ facturation mensuelle, validation, Factur-X) et vérifie le cloisonnement entre 
 - `backend/src/main/java/com/proprefact/service/FacturXService.java` : PDF/A-3 + XML EN 16931 (bibliothèque Mustang).
 - Une facture validée est figée : elle garde sa copie des coordonnées vendeur et acheteur, et le fichier
   Factur-X émis est conservé en base (`facture_document`) puis resservi à l'identique.
+- `backend/src/main/java/com/proprefact/service/DepotService.java` : dépôt en trois temps (intention enregistrée,
+  appel hors transaction, résultat enregistré), rejoué chaque minute avec la même clé d'idempotence tant qu'il échoue.
 - `backend/src/main/java/com/proprefact/service/PlateformeAgreee.java` : point d'intégration de la
   plateforme agréée. L'implémentation actuelle est **simulée** et ne transmet rien.
 

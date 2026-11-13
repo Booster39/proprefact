@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Api } from '../api';
-import { Client, Facture, Ligne, dateFr, messageErreur, montant } from '../modeles';
+import { Client, Facture, LIBELLES_STATUT, Ligne, dateFr, messageErreur, montant } from '../modeles';
 
 @Component({
   imports: [FormsModule],
@@ -11,6 +11,7 @@ export class Factures {
   private readonly api = inject(Api);
   protected readonly montant = montant;
   protected readonly dateFr = dateFr;
+  protected readonly libelles = LIBELLES_STATUT;
 
   protected readonly factures = signal<Facture[]>([]);
   protected readonly clients = signal<Client[]>([]);
@@ -55,7 +56,15 @@ export class Factures {
 
   protected action(f: Facture, action: 'valider' | 'deposer' | 'payee'): void {
     this.debut();
-    this.api.actionFacture(f.id, action).subscribe({ next: () => this.recharger(), error: (e) => this.echec(e) });
+    this.api.actionFacture(f.id, action).subscribe({
+      next: (maj) => {
+        if (maj.statut === 'DEPOT_EN_COURS') {
+          this.message.set('La plateforme n\'a pas répondu : le dépôt est conservé et sera retenté automatiquement.');
+        }
+        this.recharger();
+      },
+      error: (e) => this.echec(e),
+    });
   }
 
   protected supprimer(f: Facture): void {

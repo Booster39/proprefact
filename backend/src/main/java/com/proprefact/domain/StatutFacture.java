@@ -5,6 +5,8 @@ public enum StatutFacture {
     BROUILLON,
     /** Numérotée et figée. */
     VALIDEE,
+    /** Dépôt demandé : l'envoi à la plateforme agréée est en cours ou sera retenté. */
+    DEPOT_EN_COURS,
     /** Transmise à la plateforme agréée. */
     DEPOSEE,
     PAYEE

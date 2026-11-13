@@ -101,7 +101,7 @@ public final class Dtos {
 
     public record FactureDto(Long id, String numero, StatutFacture statut, Long clientId, String client,
             LocalDate dateEmission, LocalDate dateEcheance, String periode, BigDecimal totalHt, BigDecimal totalTva,
-            BigDecimal totalTtc, String idDepot, List<LigneDto> lignes) {
+            BigDecimal totalTtc, String idDepot, String depotErreur, List<LigneDto> lignes) {
 
         /** Sans les lignes, pour les listes. */
         static FactureDto resume(Facture f) {
@@ -117,7 +117,8 @@ public final class Dtos {
         private static FactureDto de(Facture f, List<LigneDto> lignes) {
             return new FactureDto(f.getId(), f.getNumero(), f.getStatut(), f.getClient().getId(),
                     f.getAcheteur() != null ? f.getAcheteur().getRaisonSociale() : f.getClient().getRaisonSociale(),
-                    f.getDateEmission(), f.getDateEcheance(), f.getPeriode(), f.getTotalHt(), f.getTotalTva(), f.getTotalTtc(), f.getIdDepot(), lignes);
+                    f.getDateEmission(), f.getDateEcheance(), f.getPeriode(), f.getTotalHt(), f.getTotalTva(), f.getTotalTtc(), f.getIdDepot(),
+                    f.getDepotErreur(), lignes);
         }
     }
 }

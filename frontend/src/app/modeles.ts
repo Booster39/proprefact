@@ -12,14 +12,18 @@ export interface Contrat {
   montantMensuelHt: number; tauxTva: number; dateDebut: string; dateFin: string | null;
 }
 
-export type StatutFacture = 'BROUILLON' | 'VALIDEE' | 'DEPOSEE' | 'PAYEE';
+export type StatutFacture = 'BROUILLON' | 'VALIDEE' | 'DEPOT_EN_COURS' | 'DEPOSEE' | 'PAYEE';
+
+export const LIBELLES_STATUT: Record<StatutFacture, string> = {
+  BROUILLON: 'Brouillon', VALIDEE: 'Validée', DEPOT_EN_COURS: 'Dépôt en cours', DEPOSEE: 'Déposée', PAYEE: 'Payée',
+};
 
 export interface Ligne { designation: string; quantite: number; prixUnitaireHt: number; tauxTva: number; montantHt?: number; }
 
 export interface Facture {
   id: number; numero: string | null; statut: StatutFacture; clientId: number; client: string;
   dateEmission: string | null; dateEcheance: string | null; periode: string | null;
-  totalHt: number; totalTva: number; totalTtc: number; idDepot: string | null; lignes: Ligne[] | null;
+  totalHt: number; totalTva: number; totalTtc: number; idDepot: string | null; depotErreur: string | null; lignes: Ligne[] | null;
 }
 
 const euros = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });

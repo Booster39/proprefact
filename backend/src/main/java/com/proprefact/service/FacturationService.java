@@ -50,13 +50,11 @@ public class FacturationService {
     private final EntrepriseRepository entreprises;
     private final TenantResolver tenant;
     private final FacturXService facturX;
-    private final PlateformeAgreee plateforme;
     private final FactureDocumentRepository documents;
 
     FacturationService(FactureRepository factures, LigneFactureRepository lignes, ContratRepository contrats,
             ClientRepository clients, CompteurFactureRepository compteurs, EntrepriseRepository entreprises,
-            TenantResolver tenant, FacturXService facturX, PlateformeAgreee plateforme,
-            FactureDocumentRepository documents) {
+            TenantResolver tenant, FacturXService facturX, FactureDocumentRepository documents) {
         this.factures = factures;
         this.lignes = lignes;
         this.contrats = contrats;
@@ -65,7 +63,6 @@ public class FacturationService {
         this.entreprises = entreprises;
         this.tenant = tenant;
         this.facturX = facturX;
-        this.plateforme = plateforme;
         this.documents = documents;
     }
 
@@ -143,14 +140,6 @@ public class FacturationService {
         f.figerParties(entrepriseCourante());
         f.setStatut(StatutFacture.VALIDEE);
         document(f);
-        return f;
-    }
-
-    public Facture deposer(Long id) {
-        Facture f = charger(id);
-        exiger(f, StatutFacture.VALIDEE);
-        f.setIdDepot(plateforme.deposer(f.getNumero(), document(f)));
-        f.setStatut(StatutFacture.DEPOSEE);
         return f;
     }
 

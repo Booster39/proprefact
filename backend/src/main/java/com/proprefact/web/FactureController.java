@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.proprefact.domain.Facture;
 import com.proprefact.repo.FactureRepository;
+import com.proprefact.service.DepotService;
 import com.proprefact.service.FacturationService;
 import com.proprefact.web.Dtos.FactureDto;
 import com.proprefact.web.Dtos.FactureReq;
@@ -33,10 +34,12 @@ import jakarta.validation.Valid;
 class FactureController {
     private final FacturationService facturation;
     private final FactureRepository factures;
+    private final DepotService depots;
 
-    FactureController(FacturationService facturation, FactureRepository factures) {
+    FactureController(FacturationService facturation, FactureRepository factures, DepotService depots) {
         this.facturation = facturation;
         this.factures = factures;
+        this.depots = depots;
     }
 
     @GetMapping
@@ -68,7 +71,7 @@ class FactureController {
 
     @PostMapping("/{id}/deposer")
     FactureDto deposer(@PathVariable Long id) {
-        return FactureDto.complete(facturation.deposer(id));
+        return FactureDto.complete(depots.deposer(id));
     }
 
     @PostMapping("/{id}/payee")

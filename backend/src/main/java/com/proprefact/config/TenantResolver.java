@@ -22,8 +22,32 @@ public class TenantResolver implements CurrentTenantIdentifierResolver<Long>, Hi
 
     public static final String CLAIM_ENTREPRISE = "entreprise_id";
 
+    /** Entreprise imposée pour un traitement de fond, hors de toute requête authentifiée. */
+    private final ThreadLocal<Long> imposee = new ThreadLocal<>();
+
+    /**
+     * Exécute un traitement au nom d'une entreprise (tâches planifiées). Les transactions doivent être
+     * ouvertes à l'intérieur du traitement.
+     */
+    public void executerPour(long entrepriseId, Runnable traitement) {
+        Long precedente = imposee.get();
+        imposee.set(entrepriseId);
+        try {
+            traitement.run();
+        } finally {
+            if (precedente == null) {
+                imposee.remove();
+            } else {
+                imposee.set(precedente);
+            }
+        }
+    }
+
     @Override
     public Long resolveCurrentTenantIdentifier() {
+        if (imposee.get() != null) {
+            return imposee.get();
+        }
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth instanceof JwtAuthenticationToken jwt
                 && jwt.getToken().getClaim(CLAIM_ENTREPRISE) instanceof Number id) {

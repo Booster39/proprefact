@@ -50,7 +50,12 @@
             <td>{{ dateFr(f.dateEcheance) }}</td>
             <td class="nombre">{{ montant(f.totalHt) }}</td>
             <td class="nombre">{{ montant(f.totalTtc) }}</td>
-            <td><span class="etiquette {{ f.statut }}">{{ f.statut === 'BROUILLON' ? 'Brouillon' : f.statut === 'VALIDEE' ? 'Validée' : f.statut === 'DEPOSEE' ? 'Déposée' : 'Payée' }}</span></td>
+            <td>
+              <span class="etiquette {{ f.statut }}">{{ libelles[f.statut] }}</span>
+              @if (f.statut === 'DEPOT_EN_COURS' && f.depotErreur) {
+                <div class="erreur" style="font-size: .78rem; margin: .2rem 0 0">Dernier essai : {{ f.depotErreur }}</div>
+              }
+            </td>
             <td>
               <span style="display: flex; gap: .3rem">
                 @if (f.statut === 'BROUILLON') {
@@ -60,6 +65,7 @@
                   <button class="secondaire petit" (click)="telecharger(f)">Factur-X</button>
                 }
                 @if (f.statut === 'VALIDEE') { <button class="petit" (click)="action(f, 'deposer')">Déposer</button> }
+                @if (f.statut === 'DEPOT_EN_COURS') { <button class="petit" (click)="action(f, 'deposer')">Réessayer</button> }
                 @if (f.statut === 'VALIDEE' || f.statut === 'DEPOSEE') {
                   <button class="secondaire petit" (click)="action(f, 'payee')">Payée</button>
                 }

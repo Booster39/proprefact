@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +22,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
+import jakarta.persistence.Version;
 
 @Entity
 @Getter
@@ -41,6 +43,16 @@ public class Facture extends TenantEntity {
     private BigDecimal totalTtc = BigDecimal.ZERO;
     /** Identifiant renvoyé par la plateforme agréée lors du dépôt. */
     private String idDepot;
+
+    /** Empêche deux actions simultanées (double clic, relance automatique) de s'écraser. */
+    @Version
+    private long version;
+    /** Clé d'idempotence transmise à la plateforme : identique à chaque nouvelle tentative. */
+    private String cleDepot;
+    private int depotTentatives;
+    private Instant depotProchaineTentative;
+    /** Message de la dernière tentative en échec, affiché à l'utilisateur. */
+    private String depotErreur;
 
     /** Copies figées à la validation ; vides tant que la facture est un brouillon. */
     @Embedded
