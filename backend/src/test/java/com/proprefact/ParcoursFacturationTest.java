@@ -5,11 +5,18 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
 import org.mustangproject.Invoice;
@@ -17,12 +24,16 @@ import org.mustangproject.ZUGFeRD.ZUGFeRDImporter;
 import org.mustangproject.ZUGFeRD.ZUGFeRDInvoiceImporter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import com.jayway.jsonpath.JsonPath;
+import com.proprefact.service.Messagerie;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -30,6 +41,107 @@ class ParcoursFacturationTest {
 
     @Autowired
     MockMvc mvc;
+
+    @Autowired
+    Courrier courrier;
+
+    /** Remplace l'envoi d'e-mails par une boîte en mémoire que les tests peuvent relire. */
+    static class Courrier implements Messagerie {
+        private final Map<String, List<String>> recus = new ConcurrentHashMap<>();
+
+        @Override
+        public void envoyer(String destinataire, String sujet, String texte) {
+            recus.computeIfAbsent(destinataire, d -> new CopyOnWriteArrayList<>()).add(sujet + "\n" + texte);
+        }
+
+        String dernier(String destinataire) {
+            return recus.getOrDefault(destinataire, List.of("")).getLast();
+        }
+
+        int nombre(String destinataire) {
+            return recus.getOrDefault(destinataire, List.of()).size();
+        }
+    }
+
+    @TestConfiguration
+    static class Config {
+        @Bean
+        @Primary
+        Courrier courrier() {
+            return new Courrier();
+        }
+    }
+
+    @Test
+    void unCompteNeSOuvreQuApresConfirmationDeLEmail() throws Exception {
+        demanderInscription("nouveau@conf.test", "123456782", "Propreté Conf", "mot-de-passe-solide");
+        connecter("nouveau@conf.test", "mot-de-passe-solide").andExpect(status().isForbidden());
+
+        // Un lien inventé est refusé ; le vrai lien ne sert qu'une fois.
+        mvc.perform(post("/api/auth/confirmation").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"jeton\":\"jeton-invente\"}")).andExpect(status().isBadRequest());
+        String lien = jetonRecu("nouveau@conf.test");
+        confirmer(lien);
+        mvc.perform(post("/api/auth/confirmation").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"jeton\":\"%s\"}".formatted(lien))).andExpect(status().isBadRequest());
+        connecter("nouveau@conf.test", "mot-de-passe-solide").andExpect(status().isOk());
+
+        // Renvoi du lien : même réponse pour un compte en attente, déjà confirmé ou inconnu.
+        demanderInscription("attente@conf.test", "123456782", "En attente", "mot-de-passe-solide");
+        String premier = jetonRecu("attente@conf.test");
+        for (String email : List.of("attente@conf.test", "nouveau@conf.test", "inconnu@conf.test")) {
+            mvc.perform(post("/api/auth/renvoi-confirmation").contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"email\":\"%s\"}".formatted(email)))
+                    .andExpect(status().isAccepted()).andExpect(content().string(""));
+        }
+        assertThat(courrier.nombre("inconnu@conf.test")).isZero();
+        // Le nouveau lien remplace l'ancien.
+        mvc.perform(post("/api/auth/confirmation").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"jeton\":\"%s\"}".formatted(premier))).andExpect(status().isBadRequest());
+        confirmer(jetonRecu("attente@conf.test"));
+    }
+
+    @Test
+    void uneReinscriptionNeReveleNiNeDetourneUnCompteExistant() throws Exception {
+        inscrire("titulaire@dup.test", "987654324", "Titulaire SARL");
+        int avant = courrier.nombre("titulaire@dup.test");
+
+        // Même réponse que pour une adresse nouvelle (vérifiée dans demanderInscription)...
+        demanderInscription("titulaire@dup.test", "111222333", "Usurpateur", "autre-mot-de-passe");
+        // ... le titulaire est prévenu, sans lien de confirmation, et son compte est intact.
+        assertThat(courrier.nombre("titulaire@dup.test")).isEqualTo(avant + 1);
+        assertThat(courrier.dernier("titulaire@dup.test")).contains("déjà un compte").doesNotContain("jeton=");
+        connecter("titulaire@dup.test", "autre-mot-de-passe").andExpect(status().isUnauthorized());
+        connecter("titulaire@dup.test", "mot-de-passe-solide").andExpect(status().isOk())
+                .andExpect(jsonPath("$.raisonSociale").value("Titulaire SARL"));
+
+        // Utiliser le SIREN d'une entreprise déjà inscrite ne bloque personne.
+        String autre = inscrire("autre@dup.test", "987654324", "Même SIREN SAS");
+        mvc.perform(get("/api/clients").header("Authorization", "Bearer " + autre))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+
+        // Une inscription jamais confirmée ne bloque pas l'adresse : la suivante la remplace.
+        demanderInscription("squat@dup.test", "111222333", "Squatteur", "mot-de-passe-squat");
+        demanderInscription("squat@dup.test", "444555666", "Vrai Propriétaire", "mot-de-passe-vrai");
+        confirmer(jetonRecu("squat@dup.test"));
+        connecter("squat@dup.test", "mot-de-passe-squat").andExpect(status().isUnauthorized());
+        connecter("squat@dup.test", "mot-de-passe-vrai").andExpect(status().isOk())
+                .andExpect(jsonPath("$.raisonSociale").value("Vrai Propriétaire"));
+    }
+
+    @Test
+    void lesEchecsDeConnexionRepetesSontBloques() throws Exception {
+        inscrire("cible@limite.test", "135792468", "Cible SARL");
+        for (int i = 0; i < 5; i++) {
+            connecter("cible@limite.test", "mauvais-mot-de-passe").andExpect(status().isUnauthorized());
+        }
+        // Au-delà de la limite, même le bon mot de passe est refusé jusqu'à la fin de la fenêtre.
+        connecter("cible@limite.test", "mauvais-mot-de-passe").andExpect(status().isTooManyRequests());
+        connecter("cible@limite.test", "mot-de-passe-solide").andExpect(status().isTooManyRequests());
+        // Les autres comptes ne sont pas touchés.
+        inscrire("voisin@limite.test", "135792468", "Voisin SARL");
+        connecter("voisin@limite.test", "mot-de-passe-solide").andExpect(status().isOk());
+    }
 
     @Test
     void duContratALaFactureFacturX() throws Exception {
@@ -187,14 +299,41 @@ class ParcoursFacturationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.jeton").isNotEmpty());
     }
 
+    /** Inscription complète : création du compte puis confirmation par le lien reçu par e-mail. */
     private String inscrire(String email, String siren, String raisonSociale) throws Exception {
-        String reponse = mvc.perform(post("/api/auth/inscription").contentType(MediaType.APPLICATION_JSON).content("""
-                {"email":"%s","motDePasse":"mot-de-passe-solide","raisonSociale":"%s","siren":"%s",
+        demanderInscription(email, siren, raisonSociale, "mot-de-passe-solide");
+        return confirmer(jetonRecu(email));
+    }
+
+    private void demanderInscription(String email, String siren, String raisonSociale, String motDePasse)
+            throws Exception {
+        mvc.perform(post("/api/auth/inscription").contentType(MediaType.APPLICATION_JSON).content("""
+                {"email":"%s","motDePasse":"%s","raisonSociale":"%s","siren":"%s",
                  "tvaIntra":"FR00%s","adresse":"5 rue des Lilas","codePostal":"69003","ville":"Lyon",
-                 "iban":"FR7630006000011234567890189","bic":"AGRIFRPP"}""".formatted(email, raisonSociale, siren, siren)))
+                 "iban":"FR7630006000011234567890189","bic":"AGRIFRPP"}"""
+                .formatted(email, motDePasse, raisonSociale, siren, siren)))
+                .andExpect(status().isAccepted())
+                .andExpect(content().string(""));
+    }
+
+    private String confirmer(String jetonConfirmation) throws Exception {
+        String reponse = mvc.perform(post("/api/auth/confirmation").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"jeton\":\"%s\"}".formatted(jetonConfirmation)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         return JsonPath.read(reponse, "$.jeton");
+    }
+
+    private String jetonRecu(String email) {
+        Matcher lien = Pattern.compile("jeton=([\\w-]+)").matcher(courrier.dernier(email));
+        assertThat(lien.find()).as("lien de confirmation envoyé à " + email).isTrue();
+        return lien.group(1);
+    }
+
+    private org.springframework.test.web.servlet.ResultActions connecter(String email, String motDePasse)
+            throws Exception {
+        return mvc.perform(post("/api/auth/connexion").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"email\":\"%s\",\"motDePasse\":\"%s\"}".formatted(email, motDePasse)));
     }
 
     private String envoyer(MockHttpServletRequestBuilder requete, String jeton, String json) throws Exception {

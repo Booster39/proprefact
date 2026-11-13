@@ -20,6 +20,7 @@ cd frontend && npm install && npm start
 ```
 
 L'application est sur http://localhost:4200 (les appels `/api` sont relayés vers le port 8080).
+À l'inscription, le lien de confirmation s'affiche dans le journal du back-end.
 
 ## Tests
 
@@ -47,6 +48,12 @@ facturation mensuelle, validation, Factur-X) et vérifie le cloisonnement entre 
 |---|---|
 | `DB_URL`, `DB_USER`, `DB_PASSWORD` | Connexion PostgreSQL |
 | `JWT_SECRET` | Secret de signature des jetons, 32 caractères minimum, obligatoire |
+| `APP_URL` | Adresse publique du front-end, utilisée dans les liens envoyés par e-mail |
+| `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_EXPEDITEUR` | Serveur SMTP d'envoi des e-mails |
+| `FORWARD_HEADERS` | `framework` derrière un proxy inverse, pour limiter les tentatives sur la vraie adresse IP |
+
+Sans `MAIL_HOST`, les e-mails (dont les liens de confirmation) sont seulement écrits dans le journal :
+pratique en développement, à ne jamais laisser en production.
 
 Ne pas activer le profil `dev` en production : il contient un secret connu.
 
@@ -57,3 +64,4 @@ Ne pas activer le profil `dev` en production : il contient un secret connu.
 - Avoirs, modification des brouillons, prorata des mois incomplets, factures de plus d'une page.
 - Devis, relances de paiement, export comptable, abonnements Stripe.
 - Réinitialisation du mot de passe, plusieurs utilisateurs par entreprise.
+- Limites de tentatives partagées entre instances (elles sont aujourd'hui en mémoire, par instance).

@@ -31,6 +31,7 @@ export function messageErreur(e: unknown): string {
   const err = e as { status?: number; error?: { detail?: string } };
   if (err?.error?.detail) return err.error.detail;
   if (err?.status === 0) return 'Serveur injoignable.';
+  if (err?.status === 429) return 'Trop de tentatives : réessayez dans quelques minutes.';
   if (err?.status === 400) return 'Données invalides : vérifiez les champs.';
   return 'Une erreur est survenue.';
 }

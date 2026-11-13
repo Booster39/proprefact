@@ -1,7 +1,14 @@
 package com.proprefact.service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
+import java.util.HexFormat;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -26,27 +33,55 @@ import com.proprefact.web.Dtos.JetonDto;
 
 @Service
 public class AuthService {
+    static final Duration VALIDITE_CONFIRMATION = Duration.ofHours(24);
+
     private final EntrepriseRepository entreprises;
     private final UtilisateurRepository utilisateurs;
     private final PasswordEncoder encodeur;
     private final JwtEncoder jwt;
+    private final Messagerie messagerie;
     private final Duration duree;
+    private final String urlPublique;
+    private final SecureRandom alea = new SecureRandom();
+    /** Sert à dépenser le même temps de calcul quand l'e-mail est inconnu que quand il existe. */
+    private final String hashFactice;
 
     AuthService(EntrepriseRepository entreprises, UtilisateurRepository utilisateurs, PasswordEncoder encodeur,
-            JwtEncoder jwt, @Value("${app.jwt.duree-heures}") long dureeHeures) {
+            JwtEncoder jwt, Messagerie messagerie, @Value("${app.jwt.duree-heures}") long dureeHeures,
+            @Value("${app.url-publique}") String urlPublique) {
         this.entreprises = entreprises;
         this.utilisateurs = utilisateurs;
         this.encodeur = encodeur;
         this.jwt = jwt;
+        this.messagerie = messagerie;
         this.duree = Duration.ofHours(dureeHeures);
+        this.urlPublique = urlPublique.replaceAll("/+$", "");
+        this.hashFactice = encodeur.encode(jetonAleatoire());
     }
 
+    /**
+     * Crée le compte et envoie le lien de confirmation. Le déroulement visible est le même que l'e-mail
+     * soit nouveau ou déjà inscrit : l'appelant ne peut pas en déduire quels comptes existent.
+     */
     @Transactional
-    public JetonDto inscrire(InscriptionReq req) {
-        if (utilisateurs.findByEmailIgnoreCase(req.email()).isPresent() || entreprises.existsBySiren(req.siren())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Un compte existe déjà pour cet e-mail ou ce SIREN");
+    public void inscrire(InscriptionReq req) {
+        String email = req.email().trim().toLowerCase();
+        String hash = encodeur.encode(req.motDePasse());
+        Optional<Utilisateur> existant = utilisateurs.findByEmailIgnoreCase(email);
+        if (existant.isPresent() && existant.get().isEmailVerifie()) {
+            messagerie.envoyer(email, "Vous avez déjà un compte ProPreFact", """
+                    Bonjour,
+
+                    Une inscription vient d'être demandée avec cette adresse, mais un compte existe déjà.
+                    Connectez-vous ici : %s/connexion
+
+                    Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.
+                    """.formatted(urlPublique));
+            return;
         }
-        Entreprise e = new Entreprise();
+        // Une inscription jamais confirmée est remplacée : elle ne bloque pas l'adresse.
+        Utilisateur u = existant.orElseGet(Utilisateur::new);
+        Entreprise e = u.getEntreprise() != null ? u.getEntreprise() : new Entreprise();
         e.setRaisonSociale(req.raisonSociale());
         e.setSiren(req.siren());
         e.setTvaIntra(vide(req.tvaIntra()));
@@ -58,20 +93,60 @@ public class AuthService {
         e.setOptionTvaDebits(Boolean.TRUE.equals(req.optionTvaDebits()));
         entreprises.save(e);
 
-        Utilisateur u = new Utilisateur();
-        u.setEmail(req.email().toLowerCase());
-        u.setMotDePasseHash(encodeur.encode(req.motDePasse()));
+        u.setEmail(email);
+        u.setMotDePasseHash(hash);
         u.setEntreprise(e);
         utilisateurs.save(u);
+        envoyerConfirmation(u);
+    }
+
+    /** Renvoie le lien si le compte attend encore sa confirmation ; ne révèle rien sinon. */
+    @Transactional
+    public void renvoyerConfirmation(String email) {
+        utilisateurs.findByEmailIgnoreCase(email.trim())
+                .filter(u -> !u.isEmailVerifie())
+                .ifPresent(this::envoyerConfirmation);
+    }
+
+    @Transactional
+    public JetonDto confirmer(String jetonConfirmation) {
+        Utilisateur u = utilisateurs.findByJetonConfirmationHash(sha256(jetonConfirmation))
+                .filter(x -> x.getJetonExpireLe() != null && x.getJetonExpireLe().isAfter(Instant.now()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Lien de confirmation invalide ou expiré"));
+        u.setEmailVerifie(true);
+        u.setJetonConfirmationHash(null);
+        u.setJetonExpireLe(null);
         return jeton(u);
     }
 
     @Transactional(readOnly = true)
     public JetonDto connecter(ConnexionReq req) {
-        Utilisateur u = utilisateurs.findByEmailIgnoreCase(req.email())
-                .filter(x -> encodeur.matches(req.motDePasse(), x.getMotDePasseHash()))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Identifiants incorrects"));
-        return jeton(u);
+        Optional<Utilisateur> trouve = utilisateurs.findByEmailIgnoreCase(req.email().trim());
+        boolean motDePasseCorrect = encodeur.matches(req.motDePasse(),
+                trouve.map(Utilisateur::getMotDePasseHash).orElse(hashFactice));
+        if (trouve.isEmpty() || !motDePasseCorrect) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Identifiants incorrects");
+        }
+        if (!trouve.get().isEmailVerifie()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Adresse e-mail non confirmée : cliquez sur le lien reçu par e-mail");
+        }
+        return jeton(trouve.get());
+    }
+
+    private void envoyerConfirmation(Utilisateur u) {
+        String jetonConfirmation = jetonAleatoire();
+        u.setJetonConfirmationHash(sha256(jetonConfirmation));
+        u.setJetonExpireLe(Instant.now().plus(VALIDITE_CONFIRMATION));
+        messagerie.envoyer(u.getEmail(), "Confirmez votre adresse e-mail – ProPreFact", """
+                Bonjour,
+
+                Pour activer votre compte ProPreFact, ouvrez ce lien (valable 24 heures) :
+                %s/confirmation?jeton=%s
+
+                Si vous n'êtes pas à l'origine de cette inscription, ignorez ce message.
+                """.formatted(urlPublique, jetonConfirmation));
     }
 
     private JetonDto jeton(Utilisateur u) {
@@ -85,6 +160,21 @@ public class AuthService {
         String valeur = jwt.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims))
                 .getTokenValue();
         return new JetonDto(valeur, u.getEntreprise().getRaisonSociale());
+    }
+
+    private String jetonAleatoire() {
+        byte[] octets = new byte[32];
+        alea.nextBytes(octets);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(octets);
+    }
+
+    private static String sha256(String valeur) {
+        try {
+            return HexFormat.of().formatHex(
+                    MessageDigest.getInstance("SHA-256").digest(valeur.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private static String vide(String s) {

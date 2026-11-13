@@ -28,12 +28,20 @@
         </label>
       </p>
     }
+    @if (enAttente()) {
+      <p class="info" role="status">
+        Un e-mail de confirmation a été envoyé à <strong>{{ enAttente() }}</strong>.
+        Ouvrez le lien qu'il contient pour activer votre compte (valable 24 heures).
+        <button type="button" class="secondaire petit" (click)="renvoyer()">Renvoyer l'e-mail</button>
+      </p>
+    }
+    @if (info()) { <p class="info" role="status">{{ info() }}</p> }
     @if (erreur()) { <p class="erreur" role="alert">{{ erreur() }}</p> }
     <div class="actions">
       <button type="submit" [disabled]="form.invalid || enCours()">
         {{ inscription() ? 'Créer le compte' : 'Se connecter' }}
       </button>
-      <button type="button" class="secondaire" (click)="inscription.set(!inscription()); erreur.set('')">
+      <button type="button" class="secondaire" (click)="basculer()">
         {{ inscription() ? "J'ai déjà un compte" : 'Créer un compte' }}
       </button>
     </div>

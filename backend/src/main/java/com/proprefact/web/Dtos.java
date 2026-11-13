@@ -40,6 +40,10 @@ public final class Dtos {
 
     public record ConnexionReq(@NotBlank String email, @NotBlank String motDePasse) {}
 
+    public record ConfirmationReq(@NotBlank String jeton) {}
+
+    public record EmailReq(@NotBlank @Email String email) {}
+
     public record JetonDto(String jeton, String raisonSociale) {}
 
     public record ClientReq(

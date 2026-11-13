@@ -8,4 +8,6 @@ import com.proprefact.domain.Utilisateur;
 
 public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> {
     Optional<Utilisateur> findByEmailIgnoreCase(String email);
+
+    Optional<Utilisateur> findByJetonConfirmationHash(String hash);
 }

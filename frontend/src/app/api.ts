@@ -29,7 +29,11 @@ export const connexionRequise: CanActivateFn = () =>
 export class Api {
   private readonly http = inject(HttpClient);
 
-  inscription(donnees: object): Observable<Jeton> { return this.http.post<Jeton>('/api/auth/inscription', donnees); }
+  inscription(donnees: object): Observable<void> { return this.http.post<void>('/api/auth/inscription', donnees); }
+  confirmer(jeton: string): Observable<Jeton> { return this.http.post<Jeton>('/api/auth/confirmation', { jeton }); }
+  renvoyerConfirmation(email: string): Observable<void> {
+    return this.http.post<void>('/api/auth/renvoi-confirmation', { email });
+  }
   connexion(email: string, motDePasse: string): Observable<Jeton> {
     return this.http.post<Jeton>('/api/auth/connexion', { email, motDePasse });
   }
