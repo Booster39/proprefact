@@ -18,6 +18,7 @@ import com.proprefact.repo.FactureDocumentRepository;
 import com.proprefact.repo.FactureRepository;
 import com.proprefact.repo.LigneFactureRepository;
 import com.proprefact.service.commande.FactureCommande;
+import com.proprefact.service.facturx.FacturXService;
 import com.proprefact.tenant.TenantResolver;
 import java.math.BigDecimal;
 import java.time.Clock;

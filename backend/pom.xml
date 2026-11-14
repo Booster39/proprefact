@@ -17,6 +17,7 @@
   <properties>
     <java.version>21</java.version>
     <mustang.version>2.26.0</mustang.version>
+    <pdfbox.version>3.0.8</pdfbox.version>
   </properties>
 
   <dependencies>
@@ -62,6 +63,17 @@
       <groupId>org.mustangproject</groupId>
       <artifactId>library</artifactId>
       <version>${mustang.version}</version>
+    </dependency>
+    <!-- Utilisées directement pour la mise en page du PDF ; même version que celle apportée par Mustang. -->
+    <dependency>
+      <groupId>org.apache.pdfbox</groupId>
+      <artifactId>pdfbox</artifactId>
+      <version>${pdfbox.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.pdfbox</groupId>
+      <artifactId>xmpbox</artifactId>
+      <version>${pdfbox.version}</version>
     </dependency>
 
     <dependency>

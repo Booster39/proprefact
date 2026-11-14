@@ -39,7 +39,8 @@ facturation mensuelle, validation, Factur-X) et vérifie le cloisonnement entre 
 - `backend/` : Spring Boot 4, PostgreSQL, Flyway. Une seule base pour toutes les entreprises ;
   chaque ligne porte un `entreprise_id` que Hibernate filtre automatiquement (`TenantResolver`, `@TenantId`).
 - `frontend/` : Angular 22.
-- `backend/src/main/java/com/proprefact/service/FacturXService.java` : PDF/A-3 + XML EN 16931 (bibliothèque Mustang).
+- `backend/src/main/java/com/proprefact/service/facturx/` : Factur-X, c'est-à-dire un PDF/A-3 lisible (`FacturePdf`)
+  qui embarque le XML EN 16931 (`FactureXml`, bibliothèque Mustang).
 - Une facture validée est figée : elle garde sa copie des coordonnées vendeur et acheteur, et le fichier
   Factur-X émis est conservé en base (`facture_document`) puis resservi à l'identique.
 - `backend/src/main/java/com/proprefact/service/DepotService.java` : dépôt en trois temps (intention enregistrée,
