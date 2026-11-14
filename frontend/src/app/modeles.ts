@@ -1,29 +1,73 @@
-export interface Jeton { jeton: string; raisonSociale: string; }
-
-export interface Client {
-  id: number; raisonSociale: string; siren: string; tvaIntra: string | null;
-  adresse: string; codePostal: string; ville: string; email: string | null;
+export interface Jeton {
+  jeton: string;
+  raisonSociale: string;
 }
 
-export interface Site { id: number; clientId: number; nom: string; adresse: string; codePostal: string; ville: string; }
+export interface Client {
+  id: number;
+  raisonSociale: string;
+  siren: string;
+  tvaIntra: string | null;
+  adresse: string;
+  codePostal: string;
+  ville: string;
+  email: string | null;
+}
+
+export interface Site {
+  id: number;
+  clientId: number;
+  nom: string;
+  adresse: string;
+  codePostal: string;
+  ville: string;
+}
 
 export interface Contrat {
-  id: number; siteId: number; site: string; client: string; libelle: string;
-  montantMensuelHt: number; tauxTva: number; dateDebut: string; dateFin: string | null;
+  id: number;
+  siteId: number;
+  site: string;
+  client: string;
+  libelle: string;
+  montantMensuelHt: number;
+  tauxTva: number;
+  dateDebut: string;
+  dateFin: string | null;
 }
 
 export type StatutFacture = 'BROUILLON' | 'VALIDEE' | 'DEPOT_EN_COURS' | 'DEPOSEE' | 'PAYEE';
 
 export const LIBELLES_STATUT: Record<StatutFacture, string> = {
-  BROUILLON: 'Brouillon', VALIDEE: 'Validée', DEPOT_EN_COURS: 'Dépôt en cours', DEPOSEE: 'Déposée', PAYEE: 'Payée',
+  BROUILLON: 'Brouillon',
+  VALIDEE: 'Validée',
+  DEPOT_EN_COURS: 'Dépôt en cours',
+  DEPOSEE: 'Déposée',
+  PAYEE: 'Payée',
 };
 
-export interface Ligne { designation: string; quantite: number; prixUnitaireHt: number; tauxTva: number; montantHt?: number; }
+export interface Ligne {
+  designation: string;
+  quantite: number;
+  prixUnitaireHt: number;
+  tauxTva: number;
+  montantHt?: number;
+}
 
 export interface Facture {
-  id: number; numero: string | null; statut: StatutFacture; clientId: number; client: string;
-  dateEmission: string | null; dateEcheance: string | null; periode: string | null;
-  totalHt: number; totalTva: number; totalTtc: number; idDepot: string | null; depotErreur: string | null; lignes: Ligne[] | null;
+  id: number;
+  numero: string | null;
+  statut: StatutFacture;
+  clientId: number;
+  client: string;
+  dateEmission: string | null;
+  dateEcheance: string | null;
+  periode: string | null;
+  totalHt: number;
+  totalTva: number;
+  totalTtc: number;
+  idDepot: string | null;
+  depotErreur: string | null;
+  lignes: Ligne[] | null;
 }
 
 const euros = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });

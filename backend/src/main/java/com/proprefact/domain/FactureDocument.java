@@ -1,10 +1,9 @@
 package com.proprefact.domain;
 
-import java.time.Instant;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToOne;
+import java.time.Instant;
 import lombok.Getter;
 
 /** Fichier Factur-X émis pour une facture validée. Créé une seule fois, jamais modifié. */
@@ -13,6 +12,7 @@ import lombok.Getter;
 public class FactureDocument extends TenantEntity {
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     private Facture facture;
+
     private byte[] contenu;
     private String sha256;
     private Instant creeLe;

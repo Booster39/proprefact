@@ -1,5 +1,8 @@
 package com.proprefact.service;
 
+import com.proprefact.domain.Facture;
+import com.proprefact.domain.LigneFacture;
+import com.proprefact.domain.PartieFacture;
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.io.ByteArrayInputStream;
@@ -17,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-
 import org.apache.pdfbox.pdfwriter.compress.CompressParameters;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -44,10 +46,6 @@ import org.mustangproject.ZUGFeRD.Profiles;
 import org.mustangproject.ZUGFeRD.ZUGFeRDExporterFromA1;
 import org.springframework.stereotype.Service;
 
-import com.proprefact.domain.Facture;
-import com.proprefact.domain.LigneFacture;
-import com.proprefact.domain.PartieFacture;
-
 /**
  * Produit la facture au format Factur-X : un PDF lisible (PDF/A-3) qui embarque les mêmes
  * données en XML structuré (profil EN 16931). Ne lit que les données figées dans la facture.
@@ -63,8 +61,8 @@ public class FacturXService {
 
     static final String MENTION_PENALITES = "En cas de retard de paiement, pénalités au taux de trois fois le taux "
             + "d'intérêt légal, exigibles sans rappel.";
-    static final String MENTION_INDEMNITE = "Indemnité forfaitaire pour frais de recouvrement en cas de retard de "
-            + "paiement : 40 €.";
+    static final String MENTION_INDEMNITE =
+            "Indemnité forfaitaire pour frais de recouvrement en cas de retard de " + "paiement : 40 €.";
     static final String MENTION_ESCOMPTE = "Pas d'escompte pour paiement anticipé.";
     static final String MENTION_FRANCHISE = "TVA non applicable, art. 293 B du CGI";
 
@@ -102,7 +100,8 @@ public class FacturXService {
         if (f.getVendeurIban() != null) {
             vendeur.addBankDetails(new BankDetails(f.getVendeurIban(), f.getVendeurBic()));
         }
-        TradeParty acheteur = new TradeParty(c.getRaisonSociale(), c.getAdresse(), c.getCodePostal(), c.getVille(), "FR")
+        TradeParty acheteur = new TradeParty(
+                        c.getRaisonSociale(), c.getAdresse(), c.getCodePostal(), c.getVille(), "FR")
                 .setLegalOrganisation(new LegalOrganisation(c.getSiren(), SCHEMA_SIREN))
                 .addUriUniversalCommunicationID(new SchemedID(SCHEMA_ADRESSE_ELECTRONIQUE, c.getSiren()));
         if (c.getTvaIntra() != null) {
@@ -117,8 +116,8 @@ public class FacturXService {
                 .setDeliveryDate(date(finDePrestation(f)))
                 .setSender(vendeur)
                 .setRecipient(acheteur)
-                .setPaymentTermDescription("Paiement à %d jours, au plus tard le %s".formatted(
-                        FacturationService.DELAI_PAIEMENT_JOURS, DATE.format(f.getDateEcheance())));
+                .setPaymentTermDescription("Paiement à %d jours, au plus tard le %s"
+                        .formatted(FacturationService.DELAI_PAIEMENT_JOURS, DATE.format(f.getDateEcheance())));
         if (f.getPeriode() != null) {
             YearMonth mois = YearMonth.parse(f.getPeriode());
             facture.setDetailedDeliveryPeriod(date(mois.atDay(1)), date(mois.atEndOfMonth()));
@@ -177,18 +176,24 @@ public class FacturXService {
         p.texte(e.getRaisonSociale(), MARGE, y, 14, true);
         p.texteDroite("FACTURE " + f.getNumero(), droite, y, 14, true);
         y -= 18;
-        List<String> emetteur = new ArrayList<>(List.of(e.getAdresse(), e.getCodePostal() + " " + e.getVille(), "SIREN " + e.getSiren()));
+        List<String> emetteur = new ArrayList<>(
+                List.of(e.getAdresse(), e.getCodePostal() + " " + e.getVille(), "SIREN " + e.getSiren()));
         emetteur.add(e.getTvaIntra() != null ? "TVA " + e.getTvaIntra() : MENTION_FRANCHISE);
         float yGauche = p.lignes(emetteur, MARGE, y, 9);
-        p.lignes(List.of("Date d'émission : " + DATE.format(f.getDateEmission()),
-                "Échéance : " + DATE.format(f.getDateEcheance()),
-                "Catégorie de l'opération : prestation de services"), 350, y, 9);
+        p.lignes(
+                List.of(
+                        "Date d'émission : " + DATE.format(f.getDateEmission()),
+                        "Échéance : " + DATE.format(f.getDateEcheance()),
+                        "Catégorie de l'opération : prestation de services"),
+                350,
+                y,
+                9);
 
         y = yGauche - 25;
         p.texte("Facturé à", 350, y, 9, true);
         y -= 13;
-        List<String> destinataire = new ArrayList<>(
-                List.of(c.getRaisonSociale(), c.getAdresse(), c.getCodePostal() + " " + c.getVille(), "SIREN " + c.getSiren()));
+        List<String> destinataire = new ArrayList<>(List.of(
+                c.getRaisonSociale(), c.getAdresse(), c.getCodePostal() + " " + c.getVille(), "SIREN " + c.getSiren()));
         if (c.getTvaIntra() != null) {
             destinataire.add("TVA " + c.getTvaIntra());
         }
@@ -219,8 +224,8 @@ public class FacturXService {
         p.texteDroite(montant(f.getTotalHt()), droite, y, 9, false);
         for (var base : f.basesParTaux().entrySet()) {
             y -= 13;
-            BigDecimal tva = base.getValue().multiply(base.getKey()).divide(BigDecimal.valueOf(100), 2,
-                    RoundingMode.HALF_UP);
+            BigDecimal tva =
+                    base.getValue().multiply(base.getKey()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
             p.texteDroite("TVA " + base.getKey().toPlainString() + " %", 470, y, 9, false);
             p.texteDroite(montant(tva), droite, y, 9, false);
         }
@@ -231,7 +236,8 @@ public class FacturXService {
         y -= 40;
         List<String> mentions = new ArrayList<>();
         if (f.getVendeurIban() != null) {
-            mentions.add("Règlement par virement – IBAN " + f.getVendeurIban() + (f.getVendeurBic() != null ? " – BIC " + f.getVendeurBic() : ""));
+            mentions.add("Règlement par virement – IBAN " + f.getVendeurIban()
+                    + (f.getVendeurBic() != null ? " – BIC " + f.getVendeurBic() : ""));
         }
         if (Boolean.TRUE.equals(f.getVendeurOptionTvaDebits())) {
             mentions.add("Option pour le paiement de la taxe d'après les débits.");

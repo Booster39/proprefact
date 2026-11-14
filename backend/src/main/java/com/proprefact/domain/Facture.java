@@ -1,19 +1,6 @@
 package com.proprefact.domain;
 
-import lombok.Getter;
-import lombok.Setter;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
 import jakarta.persistence.CascadeType;
-import org.hibernate.annotations.EmbeddedColumnNaming;
-
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -23,6 +10,17 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Version;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.EmbeddedColumnNaming;
 
 @Entity
 @Getter
@@ -32,12 +30,15 @@ public class Facture extends TenantEntity {
     private Client client;
     /** Attribué à la validation, sans trou dans la séquence. */
     private String numero;
+
     @Enumerated(EnumType.STRING)
     private StatutFacture statut = StatutFacture.BROUILLON;
+
     private LocalDate dateEmission;
     private LocalDate dateEcheance;
     /** Mois facturé au format AAAA-MM pour les factures issues des contrats. */
     private String periode;
+
     private BigDecimal totalHt = BigDecimal.ZERO;
     private BigDecimal totalTva = BigDecimal.ZERO;
     private BigDecimal totalTtc = BigDecimal.ZERO;
@@ -49,6 +50,7 @@ public class Facture extends TenantEntity {
     private long version;
     /** Clé d'idempotence transmise à la plateforme : identique à chaque nouvelle tentative. */
     private String cleDepot;
+
     private int depotTentatives;
     private Instant depotProchaineTentative;
     /** Message de la dernière tentative en échec, affiché à l'utilisateur. */
@@ -58,9 +60,11 @@ public class Facture extends TenantEntity {
     @Embedded
     @EmbeddedColumnNaming("vendeur_%s")
     private PartieFacture vendeur;
+
     @Embedded
     @EmbeddedColumnNaming("acheteur_%s")
     private PartieFacture acheteur;
+
     private String vendeurIban;
     private String vendeurBic;
     private Boolean vendeurOptionTvaDebits;

@@ -1,5 +1,13 @@
 package com.proprefact.service;
 
+import com.proprefact.config.TenantResolver;
+import com.proprefact.domain.Entreprise;
+import com.proprefact.domain.Utilisateur;
+import com.proprefact.repo.EntrepriseRepository;
+import com.proprefact.repo.UtilisateurRepository;
+import com.proprefact.web.Dtos.ConnexionReq;
+import com.proprefact.web.Dtos.InscriptionReq;
+import com.proprefact.web.Dtos.JetonDto;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -9,7 +17,6 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.Optional;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,15 +28,6 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-
-import com.proprefact.config.TenantResolver;
-import com.proprefact.domain.Entreprise;
-import com.proprefact.domain.Utilisateur;
-import com.proprefact.repo.EntrepriseRepository;
-import com.proprefact.repo.UtilisateurRepository;
-import com.proprefact.web.Dtos.ConnexionReq;
-import com.proprefact.web.Dtos.InscriptionReq;
-import com.proprefact.web.Dtos.JetonDto;
 
 @Service
 public class AuthService {
@@ -46,8 +44,13 @@ public class AuthService {
     /** Sert à dépenser le même temps de calcul quand l'e-mail est inconnu que quand il existe. */
     private final String hashFactice;
 
-    AuthService(EntrepriseRepository entreprises, UtilisateurRepository utilisateurs, PasswordEncoder encodeur,
-            JwtEncoder jwt, Messagerie messagerie, @Value("${app.jwt.duree-heures}") long dureeHeures,
+    AuthService(
+            EntrepriseRepository entreprises,
+            UtilisateurRepository utilisateurs,
+            PasswordEncoder encodeur,
+            JwtEncoder jwt,
+            Messagerie messagerie,
+            @Value("${app.jwt.duree-heures}") long dureeHeures,
             @Value("${app.url-publique}") String urlPublique) {
         this.entreprises = entreprises;
         this.utilisateurs = utilisateurs;
@@ -103,17 +106,20 @@ public class AuthService {
     /** Renvoie le lien si le compte attend encore sa confirmation ; ne révèle rien sinon. */
     @Transactional
     public void renvoyerConfirmation(String email) {
-        utilisateurs.findByEmailIgnoreCase(email.trim())
+        utilisateurs
+                .findByEmailIgnoreCase(email.trim())
                 .filter(u -> !u.isEmailVerifie())
                 .ifPresent(this::envoyerConfirmation);
     }
 
     @Transactional
     public JetonDto confirmer(String jetonConfirmation) {
-        Utilisateur u = utilisateurs.findByJetonConfirmationHash(sha256(jetonConfirmation))
-                .filter(x -> x.getJetonExpireLe() != null && x.getJetonExpireLe().isAfter(Instant.now()))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Lien de confirmation invalide ou expiré"));
+        Utilisateur u = utilisateurs
+                .findByJetonConfirmationHash(sha256(jetonConfirmation))
+                .filter(x ->
+                        x.getJetonExpireLe() != null && x.getJetonExpireLe().isAfter(Instant.now()))
+                .orElseThrow(() ->
+                        new ResponseStatusException(HttpStatus.BAD_REQUEST, "Lien de confirmation invalide ou expiré"));
         u.setEmailVerifie(true);
         u.setJetonConfirmationHash(null);
         u.setJetonExpireLe(null);
@@ -122,15 +128,16 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public JetonDto connecter(ConnexionReq req) {
-        Optional<Utilisateur> trouve = utilisateurs.findByEmailIgnoreCase(req.email().trim());
-        boolean motDePasseCorrect = encodeur.matches(req.motDePasse(),
-                trouve.map(Utilisateur::getMotDePasseHash).orElse(hashFactice));
+        Optional<Utilisateur> trouve =
+                utilisateurs.findByEmailIgnoreCase(req.email().trim());
+        boolean motDePasseCorrect = encodeur.matches(
+                req.motDePasse(), trouve.map(Utilisateur::getMotDePasseHash).orElse(hashFactice));
         if (trouve.isEmpty() || !motDePasseCorrect) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Identifiants incorrects");
         }
         if (!trouve.get().isEmailVerifie()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Adresse e-mail non confirmée : cliquez sur le lien reçu par e-mail");
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "Adresse e-mail non confirmée : cliquez sur le lien reçu par e-mail");
         }
         return jeton(trouve.get());
     }
@@ -146,7 +153,8 @@ public class AuthService {
                 %s/confirmation?jeton=%s
 
                 Si vous n'êtes pas à l'origine de cette inscription, ignorez ce message.
-                """.formatted(urlPublique, jetonConfirmation));
+                """.formatted(
+                        urlPublique, jetonConfirmation));
     }
 
     private JetonDto jeton(Utilisateur u) {
@@ -157,7 +165,8 @@ public class AuthService {
                 .expiresAt(maintenant.plus(duree))
                 .claim(TenantResolver.CLAIM_ENTREPRISE, u.getEntreprise().getId())
                 .build();
-        String valeur = jwt.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims))
+        String valeur = jwt.encode(JwtEncoderParameters.from(
+                        JwsHeader.with(MacAlgorithm.HS256).build(), claims))
                 .getTokenValue();
         return new JetonDto(valeur, u.getEntreprise().getRaisonSociale());
     }
@@ -170,8 +179,8 @@ public class AuthService {
 
     private static String sha256(String valeur) {
         try {
-            return HexFormat.of().formatHex(
-                    MessageDigest.getInstance("SHA-256").digest(valeur.getBytes(StandardCharsets.UTF_8)));
+            return HexFormat.of()
+                    .formatHex(MessageDigest.getInstance("SHA-256").digest(valeur.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         }

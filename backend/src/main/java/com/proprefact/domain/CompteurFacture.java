@@ -1,8 +1,8 @@
 package com.proprefact.domain;
 
+import jakarta.persistence.Entity;
 import lombok.Getter;
 import lombok.Setter;
-import jakarta.persistence.Entity;
 
 /** Dernier numéro de facture attribué pour une année. */
 @Entity

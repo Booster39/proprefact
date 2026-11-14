@@ -1,5 +1,6 @@
 package com.proprefact.config;
 
+import com.proprefact.service.Messagerie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -8,8 +9,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-
-import com.proprefact.service.Messagerie;
 
 @Configuration
 class MessagerieConfig {
@@ -21,13 +20,15 @@ class MessagerieConfig {
      * confirmation y apparaissent en clair.
      */
     @Bean
-    Messagerie messagerie(ObjectProvider<JavaMailSender> smtp, @Value("${spring.mail.host:}") String serveur,
+    Messagerie messagerie(
+            ObjectProvider<JavaMailSender> smtp,
+            @Value("${spring.mail.host:}") String serveur,
             @Value("${app.mail.expediteur}") String expediteur) {
         JavaMailSender expediteurSmtp = smtp.getIfAvailable();
         if (serveur.isBlank() || expediteurSmtp == null) {
             log.warn("Aucun serveur SMTP configuré (spring.mail.host) : les e-mails sont écrits dans le journal.");
-            return (destinataire, sujet, texte) -> log.info("E-mail NON ENVOYÉ à {} – {}\n{}", destinataire, sujet,
-                    texte);
+            return (destinataire, sujet, texte) ->
+                    log.info("E-mail NON ENVOYÉ à {} – {}\n{}", destinataire, sujet, texte);
         }
         return (destinataire, sujet, texte) -> {
             SimpleMailMessage message = new SimpleMailMessage();

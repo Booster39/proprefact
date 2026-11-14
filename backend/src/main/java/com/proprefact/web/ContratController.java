@@ -1,8 +1,13 @@
 package com.proprefact.web;
 
+import com.proprefact.domain.Contrat;
+import com.proprefact.repo.ContratRepository;
+import com.proprefact.repo.SiteRepository;
+import com.proprefact.web.Dtos.ContratDto;
+import com.proprefact.web.Dtos.ContratReq;
+import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,14 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-
-import com.proprefact.domain.Contrat;
-import com.proprefact.repo.ContratRepository;
-import com.proprefact.repo.SiteRepository;
-import com.proprefact.web.Dtos.ContratDto;
-import com.proprefact.web.Dtos.ContratReq;
-
-import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/contrats")

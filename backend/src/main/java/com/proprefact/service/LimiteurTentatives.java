@@ -4,7 +4,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.springframework.stereotype.Component;
 
 /**
@@ -34,9 +33,11 @@ public class LimiteurTentatives {
         if (compteurs.size() > TAILLE_AVANT_NETTOYAGE) {
             compteurs.values().removeIf(c -> expire(c, maintenant, fenetre));
         }
-        Compteur resultat = compteurs.compute(cle, (k, c) -> c == null || expire(c, maintenant, fenetre)
-                ? new Compteur(maintenant, 1)
-                : new Compteur(c.debut(), c.nombre() + 1));
+        Compteur resultat = compteurs.compute(
+                cle,
+                (k, c) -> c == null || expire(c, maintenant, fenetre)
+                        ? new Compteur(maintenant, 1)
+                        : new Compteur(c.debut(), c.nombre() + 1));
         return resultat.nombre() <= maximum;
     }
 

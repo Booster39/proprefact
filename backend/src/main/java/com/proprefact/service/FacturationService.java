@@ -1,24 +1,5 @@
 package com.proprefact.service;
 
-import java.math.BigDecimal;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.time.LocalDate;
-import java.time.YearMonth;
-import java.time.format.TextStyle;
-import java.util.ArrayList;
-import java.util.HexFormat;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-
 import com.proprefact.config.TenantResolver;
 import com.proprefact.domain.Client;
 import com.proprefact.domain.CompteurFacture;
@@ -36,6 +17,23 @@ import com.proprefact.repo.FactureDocumentRepository;
 import com.proprefact.repo.FactureRepository;
 import com.proprefact.repo.LigneFactureRepository;
 import com.proprefact.web.Dtos.FactureReq;
+import java.math.BigDecimal;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.TextStyle;
+import java.util.ArrayList;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @Transactional
@@ -52,9 +50,16 @@ public class FacturationService {
     private final FacturXService facturX;
     private final FactureDocumentRepository documents;
 
-    FacturationService(FactureRepository factures, LigneFactureRepository lignes, ContratRepository contrats,
-            ClientRepository clients, CompteurFactureRepository compteurs, EntrepriseRepository entreprises,
-            TenantResolver tenant, FacturXService facturX, FactureDocumentRepository documents) {
+    FacturationService(
+            FactureRepository factures,
+            LigneFactureRepository lignes,
+            ContratRepository contrats,
+            ClientRepository clients,
+            CompteurFactureRepository compteurs,
+            EntrepriseRepository entreprises,
+            TenantResolver tenant,
+            FacturXService facturX,
+            FactureDocumentRepository documents) {
         this.factures = factures;
         this.lignes = lignes;
         this.contrats = contrats;
@@ -88,8 +93,12 @@ public class FacturationService {
             LigneFacture l = new LigneFacture();
             l.setContrat(c);
             l.setPeriode(periode);
-            l.setDesignation("%s – %s – %s %d".formatted(c.getLibelle(), c.getSite().getNom(),
-                    mois.getMonth().getDisplayName(TextStyle.FULL, Locale.FRENCH), mois.getYear()));
+            l.setDesignation("%s – %s – %s %d"
+                    .formatted(
+                            c.getLibelle(),
+                            c.getSite().getNom(),
+                            mois.getMonth().getDisplayName(TextStyle.FULL, Locale.FRENCH),
+                            mois.getYear()));
             l.setQuantite(BigDecimal.ONE);
             l.setPrixUnitaireHt(c.getMontantMensuelHt());
             l.setTauxTva(c.getTauxTva());
@@ -173,11 +182,14 @@ public class FacturationService {
      * ou au premier accès pour une facture validée avant que les fichiers ne soient conservés.
      */
     private byte[] document(Facture f) {
-        return documents.findByFactureId(f.getId()).map(FactureDocument::getContenu).orElseGet(() -> {
-            byte[] contenu = facturX.generer(f);
-            documents.save(new FactureDocument(f, contenu, sha256(contenu)));
-            return contenu;
-        });
+        return documents
+                .findByFactureId(f.getId())
+                .map(FactureDocument::getContenu)
+                .orElseGet(() -> {
+                    byte[] contenu = facturX.generer(f);
+                    documents.save(new FactureDocument(f, contenu, sha256(contenu)));
+                    return contenu;
+                });
     }
 
     private static String sha256(byte[] contenu) {
@@ -194,8 +206,8 @@ public class FacturationService {
 
     private static void exiger(Facture f, StatutFacture attendu) {
         if (f.getStatut() != attendu) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Action impossible : la facture est au statut " + f.getStatut());
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Action impossible : la facture est au statut " + f.getStatut());
         }
     }
 }

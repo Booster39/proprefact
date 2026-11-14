@@ -1,8 +1,14 @@
 package com.proprefact.web;
 
+import com.proprefact.domain.Facture;
+import com.proprefact.repo.FactureRepository;
+import com.proprefact.service.DepotService;
+import com.proprefact.service.FacturationService;
+import com.proprefact.web.Dtos.FactureDto;
+import com.proprefact.web.Dtos.FactureReq;
+import jakarta.validation.Valid;
 import java.time.YearMonth;
 import java.util.List;
-
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -19,15 +25,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import com.proprefact.domain.Facture;
-import com.proprefact.repo.FactureRepository;
-import com.proprefact.service.DepotService;
-import com.proprefact.service.FacturationService;
-import com.proprefact.web.Dtos.FactureDto;
-import com.proprefact.web.Dtos.FactureReq;
-
-import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/factures")
@@ -61,7 +58,9 @@ class FactureController {
     /** Génère les brouillons du mois (paramètre mois=AAAA-MM) à partir des contrats. */
     @PostMapping("/generer-mensuelles")
     List<FactureDto> genererMensuelles(@RequestParam @DateTimeFormat(pattern = "yyyy-MM") YearMonth mois) {
-        return facturation.genererMensuelles(mois).stream().map(FactureDto::complete).toList();
+        return facturation.genererMensuelles(mois).stream()
+                .map(FactureDto::complete)
+                .toList();
     }
 
     @PostMapping("/{id}/valider")
@@ -91,8 +90,12 @@ class FactureController {
         byte[] pdf = facturation.facturX(id);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        ContentDisposition.attachment().filename(f.getNumero() + ".pdf").build().toString())
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment()
+                                .filename(f.getNumero() + ".pdf")
+                                .build()
+                                .toString())
                 .body(pdf);
     }
 }

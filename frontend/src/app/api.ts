@@ -29,8 +29,12 @@ export const connexionRequise: CanActivateFn = () =>
 export class Api {
   private readonly http = inject(HttpClient);
 
-  inscription(donnees: object): Observable<void> { return this.http.post<void>('/api/auth/inscription', donnees); }
-  confirmer(jeton: string): Observable<Jeton> { return this.http.post<Jeton>('/api/auth/confirmation', { jeton }); }
+  inscription(donnees: object): Observable<void> {
+    return this.http.post<void>('/api/auth/inscription', donnees);
+  }
+  confirmer(jeton: string): Observable<Jeton> {
+    return this.http.post<Jeton>('/api/auth/confirmation', { jeton });
+  }
   renvoyerConfirmation(email: string): Observable<void> {
     return this.http.post<void>('/api/auth/renvoi-confirmation', { email });
   }
@@ -38,29 +42,47 @@ export class Api {
     return this.http.post<Jeton>('/api/auth/connexion', { email, motDePasse });
   }
 
-  clients(): Observable<Client[]> { return this.http.get<Client[]>('/api/clients'); }
-  creerClient(c: object): Observable<Client> { return this.http.post<Client>('/api/clients', c); }
-  sites(clientId: number): Observable<Site[]> { return this.http.get<Site[]>(`/api/clients/${clientId}/sites`); }
+  clients(): Observable<Client[]> {
+    return this.http.get<Client[]>('/api/clients');
+  }
+  creerClient(c: object): Observable<Client> {
+    return this.http.post<Client>('/api/clients', c);
+  }
+  sites(clientId: number): Observable<Site[]> {
+    return this.http.get<Site[]>(`/api/clients/${clientId}/sites`);
+  }
   creerSite(clientId: number, s: object): Observable<Site> {
     return this.http.post<Site>(`/api/clients/${clientId}/sites`, s);
   }
 
-  contrats(): Observable<Contrat[]> { return this.http.get<Contrat[]>('/api/contrats'); }
-  creerContrat(c: object): Observable<Contrat> { return this.http.post<Contrat>('/api/contrats', c); }
+  contrats(): Observable<Contrat[]> {
+    return this.http.get<Contrat[]>('/api/contrats');
+  }
+  creerContrat(c: object): Observable<Contrat> {
+    return this.http.post<Contrat>('/api/contrats', c);
+  }
   resilier(id: number, dateFin: string): Observable<Contrat> {
     return this.http.post<Contrat>(`/api/contrats/${id}/resilier`, null, { params: { dateFin } });
   }
 
-  factures(): Observable<Facture[]> { return this.http.get<Facture[]>('/api/factures'); }
+  factures(): Observable<Facture[]> {
+    return this.http.get<Facture[]>('/api/factures');
+  }
   creerFacture(clientId: number, lignes: Ligne[]): Observable<Facture> {
     return this.http.post<Facture>('/api/factures', { clientId, lignes });
   }
   genererMensuelles(mois: string): Observable<Facture[]> {
-    return this.http.post<Facture[]>('/api/factures/generer-mensuelles', null, { params: { mois } });
+    return this.http.post<Facture[]>('/api/factures/generer-mensuelles', null, {
+      params: { mois },
+    });
   }
   actionFacture(id: number, action: 'valider' | 'deposer' | 'payee'): Observable<Facture> {
     return this.http.post<Facture>(`/api/factures/${id}/${action}`, null);
   }
-  supprimerFacture(id: number): Observable<void> { return this.http.delete<void>(`/api/factures/${id}`); }
-  facturX(id: number): Observable<Blob> { return this.http.get(`/api/factures/${id}/facturx`, { responseType: 'blob' }); }
+  supprimerFacture(id: number): Observable<void> {
+    return this.http.delete<void>(`/api/factures/${id}`);
+  }
+  facturX(id: number): Observable<Blob> {
+    return this.http.get(`/api/factures/${id}/facturx`, { responseType: 'blob' });
+  }
 }

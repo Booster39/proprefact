@@ -21,8 +21,17 @@ export class Connexion {
   protected readonly info = signal('');
   protected readonly enCours = signal(false);
   protected readonly f = {
-    email: '', motDePasse: '', raisonSociale: '', siren: '', tvaIntra: '',
-    adresse: '', codePostal: '', ville: '', iban: '', bic: '', optionTvaDebits: false,
+    email: '',
+    motDePasse: '',
+    raisonSociale: '',
+    siren: '',
+    tvaIntra: '',
+    adresse: '',
+    codePostal: '',
+    ville: '',
+    iban: '',
+    bic: '',
+    optionTvaDebits: false,
   };
 
   protected valider(): void {
@@ -57,7 +66,8 @@ export class Connexion {
   protected renvoyer(): void {
     this.erreur.set('');
     this.api.renvoyerConfirmation(this.enAttente()).subscribe({
-      next: () => this.info.set('Si un compte attend sa confirmation, un nouveau lien vient d\'être envoyé.'),
+      next: () =>
+        this.info.set("Si un compte attend sa confirmation, un nouveau lien vient d'être envoyé."),
       error: (e) => this.echec(e),
     });
   }

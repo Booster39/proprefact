@@ -1,10 +1,13 @@
 package com.proprefact.service;
 
+import com.proprefact.config.TenantResolver;
+import com.proprefact.domain.Facture;
+import com.proprefact.domain.StatutFacture;
+import jakarta.persistence.EntityManager;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -12,12 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
-
-import com.proprefact.config.TenantResolver;
-import com.proprefact.domain.Facture;
-import com.proprefact.domain.StatutFacture;
-
-import jakarta.persistence.EntityManager;
 
 /**
  * Dépôt des factures sur la plateforme agréée, en trois temps séparés :
@@ -35,6 +32,7 @@ public class DepotService {
 
     /** Délai pendant lequel une tentative en cours n'est pas reprise par la relance automatique. */
     static final Duration BAIL = Duration.ofMinutes(5);
+
     static final Duration DELAI_INITIAL = Duration.ofMinutes(1);
     static final Duration DELAI_MAXIMAL = Duration.ofHours(6);
 
@@ -46,8 +44,12 @@ public class DepotService {
     private final TenantResolver tenant;
     private final EntityManager em;
 
-    DepotService(PlatformTransactionManager gestionnaire, FacturationService facturation,
-            PlateformeAgreee plateforme, TenantResolver tenant, EntityManager em) {
+    DepotService(
+            PlatformTransactionManager gestionnaire,
+            FacturationService facturation,
+            PlateformeAgreee plateforme,
+            TenantResolver tenant,
+            EntityManager em) {
         this.transaction = new TransactionTemplate(gestionnaire);
         this.facturation = facturation;
         this.plateforme = plateforme;
@@ -67,8 +69,8 @@ public class DepotService {
                 f.setCleDepot(UUID.randomUUID().toString());
                 f.setDepotTentatives(0);
             } else if (f.getStatut() != StatutFacture.DEPOT_EN_COURS) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT,
-                        "Action impossible : la facture est au statut " + f.getStatut());
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT, "Action impossible : la facture est au statut " + f.getStatut());
             }
             f.setDepotProchaineTentative(Instant.now().plus(BAIL));
             return new Envoi(f.getCleDepot(), f.getNumero(), facturation.facturX(id));
@@ -119,7 +121,8 @@ public class DepotService {
     public int relancer(Instant maintenant) {
         // Requête SQL directe, volontairement hors du filtre par entreprise : elle ne lit que des identifiants.
         @SuppressWarnings("unchecked")
-        List<Object[]> enAttente = transaction.execute(etat -> em.createNativeQuery("""
+        List<Object[]> enAttente = transaction.execute(etat ->
+                em.createNativeQuery("""
                 select id, entreprise_id from facture
                 where statut = 'DEPOT_EN_COURS' and depot_prochaine_tentative <= :maintenant
                 order by depot_prochaine_tentative""").setParameter("maintenant", maintenant).getResultList());

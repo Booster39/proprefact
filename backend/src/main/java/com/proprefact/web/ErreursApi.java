@@ -12,7 +12,7 @@ class ErreursApi {
     /** Deux actions simultanées sur la même facture : la seconde est refusée plutôt qu'appliquée à l'aveugle. */
     @ExceptionHandler(OptimisticLockingFailureException.class)
     ProblemDetail modificationConcurrente() {
-        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
-                "La facture vient d'être modifiée par une autre action : rechargez la page");
+        return ProblemDetail.forStatusAndDetail(
+                HttpStatus.CONFLICT, "La facture vient d'être modifiée par une autre action : rechargez la page");
     }
 }

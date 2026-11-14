@@ -1,6 +1,10 @@
 <h1>Contrats</h1>
-<p class="info">Chaque contrat est une prestation récurrente, facturée tous les mois pour un site.</p>
-@if (erreur()) { <p class="erreur" role="alert">{{ erreur() }}</p> }
+<p class="info">
+  Chaque contrat est une prestation récurrente, facturée tous les mois pour un site.
+</p>
+@if (erreur()) {
+  <p class="erreur" role="alert">{{ erreur() }}</p>
+}
 
 <div class="carte">
   <h2>Nouveau contrat</h2>
@@ -9,25 +13,62 @@
   } @else {
     <form #form="ngForm" (ngSubmit)="creer(form)">
       <div class="grille">
-        <label>Client
+        <label
+          >Client
           <select name="clientId" [(ngModel)]="clientId" (ngModelChange)="chargerSites()" required>
             <option [ngValue]="null" disabled>Choisir…</option>
-            @for (c of clients(); track c.id) { <option [ngValue]="c.id">{{ c.raisonSociale }}</option> }
+            @for (c of clients(); track c.id) {
+              <option [ngValue]="c.id">{{ c.raisonSociale }}</option>
+            }
           </select>
         </label>
-        <label>Site
+        <label
+          >Site
           <select name="siteId" [(ngModel)]="nouveau.siteId" required>
             <option [ngValue]="null" disabled>Choisir…</option>
-            @for (s of sites(); track s.id) { <option [ngValue]="s.id">{{ s.nom }}</option> }
+            @for (s of sites(); track s.id) {
+              <option [ngValue]="s.id">{{ s.nom }}</option>
+            }
           </select>
         </label>
-        <label>Prestation <input name="libelle" [(ngModel)]="nouveau.libelle" required placeholder="Entretien des bureaux, 3 passages par semaine" /></label>
-        <label>Montant mensuel HT (€) <input type="number" name="montantMensuelHt" [(ngModel)]="nouveau.montantMensuelHt" required min="0.01" step="0.01" /></label>
-        <label>TVA (%) <input type="number" name="tauxTva" [(ngModel)]="nouveau.tauxTva" required min="0" step="0.1" /></label>
-        <label>Début <input type="date" name="dateDebut" [(ngModel)]="nouveau.dateDebut" required /></label>
-        <label>Fin (facultative) <input type="date" name="dateFin" [(ngModel)]="nouveau.dateFin" /></label>
+        <label
+          >Prestation
+          <input
+            name="libelle"
+            [(ngModel)]="nouveau.libelle"
+            required
+            placeholder="Entretien des bureaux, 3 passages par semaine"
+        /></label>
+        <label
+          >Montant mensuel HT (€)
+          <input
+            type="number"
+            name="montantMensuelHt"
+            [(ngModel)]="nouveau.montantMensuelHt"
+            required
+            min="0.01"
+            step="0.01"
+        /></label>
+        <label
+          >TVA (%)
+          <input
+            type="number"
+            name="tauxTva"
+            [(ngModel)]="nouveau.tauxTva"
+            required
+            min="0"
+            step="0.1"
+        /></label>
+        <label
+          >Début <input type="date" name="dateDebut" [(ngModel)]="nouveau.dateDebut" required
+        /></label>
+        <label
+          >Fin (facultative) <input type="date" name="dateFin" [(ngModel)]="nouveau.dateFin"
+        /></label>
       </div>
-      <div class="actions"><button type="submit" [disabled]="form.invalid">Ajouter le contrat</button></div>
+      <div class="actions">
+        <button type="submit" [disabled]="form.invalid">Ajouter le contrat</button>
+      </div>
     </form>
   }
 </div>
@@ -39,19 +80,37 @@
   } @else {
     <table>
       <thead>
-        <tr><th>Client</th><th>Site</th><th>Prestation</th><th class="nombre">Mensuel HT</th><th>Début</th><th>Fin</th><th></th></tr>
+        <tr>
+          <th>Client</th>
+          <th>Site</th>
+          <th>Prestation</th>
+          <th class="nombre">Mensuel HT</th>
+          <th>Début</th>
+          <th>Fin</th>
+          <th></th>
+        </tr>
       </thead>
       <tbody>
         @for (c of contrats(); track c.id) {
           <tr>
-            <td>{{ c.client }}</td><td>{{ c.site }}</td><td class="large">{{ c.libelle }}</td>
+            <td>{{ c.client }}</td>
+            <td>{{ c.site }}</td>
+            <td class="large">{{ c.libelle }}</td>
             <td class="nombre">{{ montant(c.montantMensuelHt) }}</td>
-            <td>{{ dateFr(c.dateDebut) }}</td><td>{{ dateFr(c.dateFin) }}</td>
+            <td>{{ dateFr(c.dateDebut) }}</td>
+            <td>{{ dateFr(c.dateFin) }}</td>
             <td>
               @if (!c.dateFin) {
-                <span style="display: flex; gap: .3rem">
-                  <input #fin type="date" style="margin: 0; padding: .2rem .3rem; width: 9.5rem" [attr.aria-label]="'Date de fin du contrat ' + c.libelle" />
-                  <button class="secondaire petit" (click)="resilier(c, fin.value)">Résilier</button>
+                <span style="display: flex; gap: 0.3rem">
+                  <input
+                    #fin
+                    type="date"
+                    style="margin: 0; padding: 0.2rem 0.3rem; width: 9.5rem"
+                    [attr.aria-label]="'Date de fin du contrat ' + c.libelle"
+                  />
+                  <button class="secondaire petit" (click)="resilier(c, fin.value)">
+                    Résilier
+                  </button>
                 </span>
               }
             </td>

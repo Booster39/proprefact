@@ -16,8 +16,8 @@ public class PartieFacture {
 
     protected PartieFacture() {}
 
-    private PartieFacture(String raisonSociale, String siren, String tvaIntra, String adresse, String codePostal,
-            String ville) {
+    private PartieFacture(
+            String raisonSociale, String siren, String tvaIntra, String adresse, String codePostal, String ville) {
         this.raisonSociale = raisonSociale;
         this.siren = siren;
         this.tvaIntra = tvaIntra;
@@ -27,12 +27,12 @@ public class PartieFacture {
     }
 
     public static PartieFacture de(Entreprise e) {
-        return new PartieFacture(e.getRaisonSociale(), e.getSiren(), e.getTvaIntra(), e.getAdresse(),
-                e.getCodePostal(), e.getVille());
+        return new PartieFacture(
+                e.getRaisonSociale(), e.getSiren(), e.getTvaIntra(), e.getAdresse(), e.getCodePostal(), e.getVille());
     }
 
     public static PartieFacture de(Client c) {
-        return new PartieFacture(c.getRaisonSociale(), c.getSiren(), c.getTvaIntra(), c.getAdresse(),
-                c.getCodePostal(), c.getVille());
+        return new PartieFacture(
+                c.getRaisonSociale(), c.getSiren(), c.getTvaIntra(), c.getAdresse(), c.getCodePostal(), c.getVille());
     }
 }

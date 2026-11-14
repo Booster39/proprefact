@@ -1,7 +1,15 @@
 package com.proprefact.web;
 
+import com.proprefact.service.AuthService;
+import com.proprefact.service.LimiteurTentatives;
+import com.proprefact.web.Dtos.ConfirmationReq;
+import com.proprefact.web.Dtos.ConnexionReq;
+import com.proprefact.web.Dtos.EmailReq;
+import com.proprefact.web.Dtos.InscriptionReq;
+import com.proprefact.web.Dtos.JetonDto;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import java.time.Duration;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,17 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-
-import com.proprefact.service.AuthService;
-import com.proprefact.service.LimiteurTentatives;
-import com.proprefact.web.Dtos.ConfirmationReq;
-import com.proprefact.web.Dtos.ConnexionReq;
-import com.proprefact.web.Dtos.EmailReq;
-import com.proprefact.web.Dtos.InscriptionReq;
-import com.proprefact.web.Dtos.JetonDto;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -32,7 +29,9 @@ class AuthController {
     private final int maxParIp;
     private final int maxEchecsParEmail;
 
-    AuthController(AuthService auth, LimiteurTentatives limiteur,
+    AuthController(
+            AuthService auth,
+            LimiteurTentatives limiteur,
             @Value("${app.auth.max-requetes-par-ip}") int maxParIp,
             @Value("${app.auth.max-echecs-par-email}") int maxEchecsParEmail) {
         this.auth = auth;
@@ -88,7 +87,7 @@ class AuthController {
     }
 
     private static ResponseStatusException tropDeTentatives() {
-        return new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
-                "Trop de tentatives : réessayez dans quelques minutes");
+        return new ResponseStatusException(
+                HttpStatus.TOO_MANY_REQUESTS, "Trop de tentatives : réessayez dans quelques minutes");
     }
 }

@@ -2,19 +2,37 @@
   <h1>{{ inscription() ? 'Créer le compte de votre entreprise' : 'Connexion' }}</h1>
   <form #form="ngForm" (ngSubmit)="valider()">
     <div class="grille">
-      <label>E-mail <input type="email" name="email" [(ngModel)]="f.email" required autocomplete="email" /></label>
-      <label>Mot de passe
-        <input type="password" name="motDePasse" [(ngModel)]="f.motDePasse" required
-               [minlength]="inscription() ? 10 : null"
-               [autocomplete]="inscription() ? 'new-password' : 'current-password'" />
+      <label
+        >E-mail
+        <input type="email" name="email" [(ngModel)]="f.email" required autocomplete="email"
+      /></label>
+      <label
+        >Mot de passe
+        <input
+          type="password"
+          name="motDePasse"
+          [(ngModel)]="f.motDePasse"
+          required
+          [minlength]="inscription() ? 10 : null"
+          [autocomplete]="inscription() ? 'new-password' : 'current-password'"
+        />
       </label>
     </div>
     @if (inscription()) {
-      <p class="info">10 caractères minimum pour le mot de passe. Ces informations figureront sur vos factures.</p>
+      <p class="info">
+        10 caractères minimum pour le mot de passe. Ces informations figureront sur vos factures.
+      </p>
       <div class="grille">
-        <label>Raison sociale <input name="raisonSociale" [(ngModel)]="f.raisonSociale" required /></label>
-        <label>SIREN (9 chiffres) <input name="siren" [(ngModel)]="f.siren" required pattern="[0-9]{9}" inputmode="numeric" /></label>
-        <label>N° de TVA (vide si franchise en base) <input name="tvaIntra" [(ngModel)]="f.tvaIntra" /></label>
+        <label
+          >Raison sociale <input name="raisonSociale" [(ngModel)]="f.raisonSociale" required
+        /></label>
+        <label
+          >SIREN (9 chiffres)
+          <input name="siren" [(ngModel)]="f.siren" required pattern="[0-9]{9}" inputmode="numeric"
+        /></label>
+        <label
+          >N° de TVA (vide si franchise en base) <input name="tvaIntra" [(ngModel)]="f.tvaIntra"
+        /></label>
         <label>Adresse <input name="adresse" [(ngModel)]="f.adresse" required /></label>
         <label>Code postal <input name="codePostal" [(ngModel)]="f.codePostal" required /></label>
         <label>Ville <input name="ville" [(ngModel)]="f.ville" required /></label>
@@ -30,13 +48,19 @@
     }
     @if (enAttente()) {
       <p class="info" role="status">
-        Un e-mail de confirmation a été envoyé à <strong>{{ enAttente() }}</strong>.
-        Ouvrez le lien qu'il contient pour activer votre compte (valable 24 heures).
-        <button type="button" class="secondaire petit" (click)="renvoyer()">Renvoyer l'e-mail</button>
+        Un e-mail de confirmation a été envoyé à <strong>{{ enAttente() }}</strong>. Ouvrez le lien
+        qu'il contient pour activer votre compte (valable 24 heures).
+        <button type="button" class="secondaire petit" (click)="renvoyer()">
+          Renvoyer l'e-mail
+        </button>
       </p>
     }
-    @if (info()) { <p class="info" role="status">{{ info() }}</p> }
-    @if (erreur()) { <p class="erreur" role="alert">{{ erreur() }}</p> }
+    @if (info()) {
+      <p class="info" role="status">{{ info() }}</p>
+    }
+    @if (erreur()) {
+      <p class="erreur" role="alert">{{ erreur() }}</p>
+    }
     <div class="actions">
       <button type="submit" [disabled]="form.invalid || enCours()">
         {{ inscription() ? 'Créer le compte' : 'Se connecter' }}

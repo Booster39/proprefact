@@ -5,14 +5,14 @@ Facturation récurrente pour les entreprises de propreté, avec factures au form
 
 ## Démarrer en développement
 
-Prérequis : Java 21, Maven, Node 22, Docker.
+Prérequis : Java 21, Node 22, Docker.
 
 ```bash
 docker compose up -d
 ```
 
 ```bash
-cd backend && SPRING_PROFILES_ACTIVE=dev mvn spring-boot:run
+cd backend && SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run
 ```
 
 ```bash
@@ -25,7 +25,8 @@ L'application est sur http://localhost:4200 (les appels `/api` sont relayés ver
 ## Tests
 
 ```bash
-cd backend && mvn test
+cd backend && ./mvnw verify
+cd frontend && npm run format:check && npm run lint && npm test
 ```
 
 Le test `ParcoursFacturationTest` déroule le parcours complet (inscription, clients, contrats,

@@ -16,12 +16,20 @@ export class Session {
 
   ouvrir(j: Jeton): void {
     this.etat.set(j);
-    try { localStorage.setItem(CLE, JSON.stringify(j)); } catch { /* stockage indisponible */ }
+    try {
+      localStorage.setItem(CLE, JSON.stringify(j));
+    } catch {
+      /* stockage indisponible */
+    }
   }
 
   fermer(): void {
     this.etat.set(null);
-    try { localStorage.removeItem(CLE); } catch { /* stockage indisponible */ }
+    try {
+      localStorage.removeItem(CLE);
+    } catch {
+      /* stockage indisponible */
+    }
   }
 
   private lire(): Jeton | null {

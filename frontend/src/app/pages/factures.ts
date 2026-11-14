@@ -1,7 +1,15 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Api } from '../api';
-import { Client, Facture, LIBELLES_STATUT, Ligne, dateFr, messageErreur, montant } from '../modeles';
+import {
+  Client,
+  Facture,
+  LIBELLES_STATUT,
+  Ligne,
+  dateFr,
+  messageErreur,
+  montant,
+} from '../modeles';
 
 @Component({
   imports: [FormsModule],
@@ -31,9 +39,11 @@ export class Factures {
     this.debut();
     this.api.genererMensuelles(this.mois).subscribe({
       next: (creees) => {
-        this.message.set(creees.length === 0
-          ? 'Rien à facturer : tous les contrats actifs ce mois-là sont déjà facturés.'
-          : `${creees.length} brouillon(s) créé(s). Vérifiez-les puis validez-les.`);
+        this.message.set(
+          creees.length === 0
+            ? 'Rien à facturer : tous les contrats actifs ce mois-là sont déjà facturés.'
+            : `${creees.length} brouillon(s) créé(s). Vérifiez-les puis validez-les.`,
+        );
         this.recharger();
       },
       error: (e) => this.echec(e),
@@ -59,7 +69,9 @@ export class Factures {
     this.api.actionFacture(f.id, action).subscribe({
       next: (maj) => {
         if (maj.statut === 'DEPOT_EN_COURS') {
-          this.message.set('La plateforme n\'a pas répondu : le dépôt est conservé et sera retenté automatiquement.');
+          this.message.set(
+            "La plateforme n'a pas répondu : le dépôt est conservé et sera retenté automatiquement.",
+          );
         }
         this.recharger();
       },
@@ -69,7 +81,9 @@ export class Factures {
 
   protected supprimer(f: Facture): void {
     this.debut();
-    this.api.supprimerFacture(f.id).subscribe({ next: () => this.recharger(), error: (e) => this.echec(e) });
+    this.api
+      .supprimerFacture(f.id)
+      .subscribe({ next: () => this.recharger(), error: (e) => this.echec(e) });
   }
 
   protected telecharger(f: Facture): void {
@@ -88,7 +102,9 @@ export class Factures {
   }
 
   private recharger(): void {
-    this.api.factures().subscribe({ next: (f) => this.factures.set(f), error: (e) => this.echec(e) });
+    this.api
+      .factures()
+      .subscribe({ next: (f) => this.factures.set(f), error: (e) => this.echec(e) });
   }
 
   private debut(): void {

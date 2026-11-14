@@ -1,7 +1,6 @@
 package com.proprefact.config;
 
 import java.util.Map;
-
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
 import org.springframework.boot.hibernate.autoconfigure.HibernatePropertiesCustomizer;

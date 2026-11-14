@@ -29,7 +29,10 @@ export class Contrats {
     this.sites.set([]);
     this.nouveau.siteId = null;
     if (this.clientId !== null) {
-      this.api.sites(this.clientId).subscribe({ next: (s) => this.sites.set(s), error: (e) => this.erreur.set(messageErreur(e)) });
+      this.api.sites(this.clientId).subscribe({
+        next: (s) => this.sites.set(s),
+        error: (e) => this.erreur.set(messageErreur(e)),
+      });
     }
   }
 
@@ -57,8 +60,12 @@ export class Contrats {
 
   private vide() {
     return {
-      siteId: null as number | null, libelle: '', montantMensuelHt: null as number | null, tauxTva: 20,
-      dateDebut: new Date().toISOString().slice(0, 10), dateFin: '',
+      siteId: null as number | null,
+      libelle: '',
+      montantMensuelHt: null as number | null,
+      tauxTva: 20,
+      dateDebut: new Date().toISOString().slice(0, 10),
+      dateFin: '',
     };
   }
 }

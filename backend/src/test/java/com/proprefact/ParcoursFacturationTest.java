@@ -9,6 +9,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.jayway.jsonpath.JsonPath;
+import com.proprefact.service.DepotService;
+import com.proprefact.service.Messagerie;
+import com.proprefact.service.PlateformeAgreee;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -19,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.junit.jupiter.api.Test;
 import org.mustangproject.Invoice;
 import org.mustangproject.ZUGFeRD.ZUGFeRDImporter;
@@ -27,17 +30,12 @@ import org.mustangproject.ZUGFeRD.ZUGFeRDInvoiceImporter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-
-import com.jayway.jsonpath.JsonPath;
-import com.proprefact.service.DepotService;
-import com.proprefact.service.Messagerie;
-import com.proprefact.service.PlateformeAgreee;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -55,7 +53,8 @@ class ParcoursFacturationTest {
 
         @Override
         public void envoyer(String destinataire, String sujet, String texte) {
-            recus.computeIfAbsent(destinataire, d -> new CopyOnWriteArrayList<>()).add(sujet + "\n" + texte);
+            recus.computeIfAbsent(destinataire, d -> new CopyOnWriteArrayList<>())
+                    .add(sujet + "\n" + texte);
         }
 
         String dernier(String destinataire) {
@@ -102,8 +101,7 @@ class ParcoursFacturationTest {
         int client = id(envoyer(post("/api/clients"), jeton, """
                 {"raisonSociale":"Client Dépôt","siren":"112233445","adresse":"1 rue D","codePostal":"44000","ville":"Nantes"}"""));
         String corps = """
-                {"clientId":%d,"lignes":[{"designation":"Vitrerie","quantite":1,"prixUnitaireHt":100,"tauxTva":20}]}"""
-                .formatted(client);
+                {"clientId":%d,"lignes":[{"designation":"Vitrerie","quantite":1,"prixUnitaireHt":100,"tauxTva":20}]}""".formatted(client);
         int avantDepots = plateforme.depotsParCle.size();
 
         // 1. Plateforme injoignable : la demande est conservée, la facture reste « dépôt en cours ».
@@ -140,7 +138,8 @@ class ParcoursFacturationTest {
 
         // Trois essais pour la première facture, deux pour la seconde, mais deux dépôts seulement.
         assertThat(plateforme.depotsParCle.size() - avantDepots).isEqualTo(2);
-        List<String> cles = plateforme.clesRecues.subList(plateforme.clesRecues.size() - 5, plateforme.clesRecues.size());
+        List<String> cles =
+                plateforme.clesRecues.subList(plateforme.clesRecues.size() - 5, plateforme.clesRecues.size());
         assertThat(cles.subList(0, 3)).containsOnly(cles.get(0));
         assertThat(cles.subList(3, 5)).containsOnly(cles.get(3)).doesNotContain(cles.get(0));
 
@@ -171,26 +170,34 @@ class ParcoursFacturationTest {
         connecter("nouveau@conf.test", "mot-de-passe-solide").andExpect(status().isForbidden());
 
         // Un lien inventé est refusé ; le vrai lien ne sert qu'une fois.
-        mvc.perform(post("/api/auth/confirmation").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"jeton\":\"jeton-invente\"}")).andExpect(status().isBadRequest());
+        mvc.perform(post("/api/auth/confirmation")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"jeton\":\"jeton-invente\"}"))
+                .andExpect(status().isBadRequest());
         String lien = jetonRecu("nouveau@conf.test");
         confirmer(lien);
-        mvc.perform(post("/api/auth/confirmation").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"jeton\":\"%s\"}".formatted(lien))).andExpect(status().isBadRequest());
+        mvc.perform(post("/api/auth/confirmation")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"jeton\":\"%s\"}".formatted(lien)))
+                .andExpect(status().isBadRequest());
         connecter("nouveau@conf.test", "mot-de-passe-solide").andExpect(status().isOk());
 
         // Renvoi du lien : même réponse pour un compte en attente, déjà confirmé ou inconnu.
         demanderInscription("attente@conf.test", "123456782", "En attente", "mot-de-passe-solide");
         String premier = jetonRecu("attente@conf.test");
         for (String email : List.of("attente@conf.test", "nouveau@conf.test", "inconnu@conf.test")) {
-            mvc.perform(post("/api/auth/renvoi-confirmation").contentType(MediaType.APPLICATION_JSON)
-                    .content("{\"email\":\"%s\"}".formatted(email)))
-                    .andExpect(status().isAccepted()).andExpect(content().string(""));
+            mvc.perform(post("/api/auth/renvoi-confirmation")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"%s\"}".formatted(email)))
+                    .andExpect(status().isAccepted())
+                    .andExpect(content().string(""));
         }
         assertThat(courrier.nombre("inconnu@conf.test")).isZero();
         // Le nouveau lien remplace l'ancien.
-        mvc.perform(post("/api/auth/confirmation").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"jeton\":\"%s\"}".formatted(premier))).andExpect(status().isBadRequest());
+        mvc.perform(post("/api/auth/confirmation")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"jeton\":\"%s\"}".formatted(premier)))
+                .andExpect(status().isBadRequest());
         confirmer(jetonRecu("attente@conf.test"));
     }
 
@@ -203,22 +210,27 @@ class ParcoursFacturationTest {
         demanderInscription("titulaire@dup.test", "111222333", "Usurpateur", "autre-mot-de-passe");
         // ... le titulaire est prévenu, sans lien de confirmation, et son compte est intact.
         assertThat(courrier.nombre("titulaire@dup.test")).isEqualTo(avant + 1);
-        assertThat(courrier.dernier("titulaire@dup.test")).contains("déjà un compte").doesNotContain("jeton=");
+        assertThat(courrier.dernier("titulaire@dup.test"))
+                .contains("déjà un compte")
+                .doesNotContain("jeton=");
         connecter("titulaire@dup.test", "autre-mot-de-passe").andExpect(status().isUnauthorized());
-        connecter("titulaire@dup.test", "mot-de-passe-solide").andExpect(status().isOk())
+        connecter("titulaire@dup.test", "mot-de-passe-solide")
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.raisonSociale").value("Titulaire SARL"));
 
         // Utiliser le SIREN d'une entreprise déjà inscrite ne bloque personne.
         String autre = inscrire("autre@dup.test", "987654324", "Même SIREN SAS");
         mvc.perform(get("/api/clients").header("Authorization", "Bearer " + autre))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
 
         // Une inscription jamais confirmée ne bloque pas l'adresse : la suivante la remplace.
         demanderInscription("squat@dup.test", "111222333", "Squatteur", "mot-de-passe-squat");
         demanderInscription("squat@dup.test", "444555666", "Vrai Propriétaire", "mot-de-passe-vrai");
         confirmer(jetonRecu("squat@dup.test"));
         connecter("squat@dup.test", "mot-de-passe-squat").andExpect(status().isUnauthorized());
-        connecter("squat@dup.test", "mot-de-passe-vrai").andExpect(status().isOk())
+        connecter("squat@dup.test", "mot-de-passe-vrai")
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$.raisonSociale").value("Vrai Propriétaire"));
     }
 
@@ -283,12 +295,18 @@ class ParcoursFacturationTest {
                 .andExpect(status().isConflict());
 
         // Le PDF embarque le XML structuré, relu ici avec la bibliothèque de référence.
-        byte[] pdf = mvc.perform(get("/api/factures/" + facture + "/facturx").header("Authorization", "Bearer " + jeton))
+        byte[] pdf = mvc.perform(
+                        get("/api/factures/" + facture + "/facturx").header("Authorization", "Bearer " + jeton))
                 .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsByteArray();
+                .andReturn()
+                .getResponse()
+                .getContentAsByteArray();
         String xml = new String(new ZUGFeRDImporter(new ByteArrayInputStream(pdf)).getRawXML(), StandardCharsets.UTF_8);
         ZUGFeRDInvoiceImporter lecteur = new ZUGFeRDInvoiceImporter(new ByteArrayInputStream(pdf));
-        assertThat(xml).contains("urn:cen.eu:en16931:2017").contains("552100554").contains("732829320");
+        assertThat(xml)
+                .contains("urn:cen.eu:en16931:2017")
+                .contains("552100554")
+                .contains("732829320");
         Invoice relue = lecteur.extractInvoice();
         assertThat(relue.getNumber()).isEqualTo(numero);
         assertThat(relue.getSender().getName()).isEqualTo("Net Plus SARL");
@@ -304,8 +322,9 @@ class ParcoursFacturationTest {
         int ponctuelle = id(envoyer(post("/api/factures"), jeton, """
                 {"clientId":%d,"lignes":[{"designation":"Remise en état après travaux","quantite":1,
                  "prixUnitaireHt":250,"tauxTva":20}]}""".formatted(client)));
-        assertThat(JsonPath.<String>read(envoyer(post("/api/factures/" + ponctuelle + "/valider"), jeton, null),
-                "$.numero")).endsWith("-00002");
+        assertThat(JsonPath.<String>read(
+                        envoyer(post("/api/factures/" + ponctuelle + "/valider"), jeton, null), "$.numero"))
+                .endsWith("-00002");
     }
 
     @Test
@@ -314,8 +333,7 @@ class ParcoursFacturationTest {
         int client = id(envoyer(post("/api/clients"), jeton, """
                 {"raisonSociale":"Ancien Nom SA","siren":"777777772","adresse":"1 rue Ancienne","codePostal":"31000","ville":"Toulouse"}"""));
         String ligne = """
-                {"clientId":%d,"lignes":[{"designation":"Vitrerie","quantite":1,"prixUnitaireHt":100,"tauxTva":20}]}"""
-                .formatted(client);
+                {"clientId":%d,"lignes":[{"designation":"Vitrerie","quantite":1,"prixUnitaireHt":100,"tauxTva":20}]}""".formatted(client);
         int brouillon = id(envoyer(post("/api/factures"), jeton, ligne));
         int validee = id(envoyer(post("/api/factures"), jeton, ligne));
         envoyer(post("/api/factures/" + validee + "/valider"), jeton, null);
@@ -327,16 +345,19 @@ class ParcoursFacturationTest {
         // Le fichier émis est rendu à l'identique, avec les coordonnées de l'époque.
         byte[] apres = telecharger(validee, jeton);
         assertThat(apres).isEqualTo(avant);
-        String xml = new String(new ZUGFeRDImporter(new ByteArrayInputStream(apres)).getRawXML(), StandardCharsets.UTF_8);
-        assertThat(xml).contains("Ancien Nom SA", "777777772", "1 rue Ancienne")
+        String xml =
+                new String(new ZUGFeRDImporter(new ByteArrayInputStream(apres)).getRawXML(), StandardCharsets.UTF_8);
+        assertThat(xml)
+                .contains("Ancien Nom SA", "777777772", "1 rue Ancienne")
                 .doesNotContain("Nouveau Nom SAS", "888888880");
         mvc.perform(get("/api/factures/" + validee).header("Authorization", "Bearer " + jeton))
                 .andExpect(jsonPath("$.client").value("Ancien Nom SA"));
 
         // Le brouillon, lui, prend les coordonnées à jour au moment de sa validation.
         envoyer(post("/api/factures/" + brouillon + "/valider"), jeton, null);
-        String xmlNouveau = new String(new ZUGFeRDImporter(new ByteArrayInputStream(telecharger(brouillon, jeton)))
-                .getRawXML(), StandardCharsets.UTF_8);
+        String xmlNouveau = new String(
+                new ZUGFeRDImporter(new ByteArrayInputStream(telecharger(brouillon, jeton))).getRawXML(),
+                StandardCharsets.UTF_8);
         assertThat(xmlNouveau).contains("Nouveau Nom SAS", "888888880").doesNotContain("Ancien Nom SA");
     }
 
@@ -347,49 +368,59 @@ class ParcoursFacturationTest {
         int clientA = id(envoyer(post("/api/clients"), jetonA, """
                 {"raisonSociale":"Client de A","siren":"333333334","adresse":"1 rue A","codePostal":"75001","ville":"Paris"}"""));
         int factureA = id(envoyer(post("/api/factures"), jetonA, """
-                {"clientId":%d,"lignes":[{"designation":"Vitrerie","quantite":2,"prixUnitaireHt":90,"tauxTva":20}]}"""
-                .formatted(clientA)));
+                {"clientId":%d,"lignes":[{"designation":"Vitrerie","quantite":2,"prixUnitaireHt":90,"tauxTva":20}]}""".formatted(clientA)));
 
         mvc.perform(get("/api/clients").header("Authorization", "Bearer " + jetonB))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
         mvc.perform(get("/api/factures").header("Authorization", "Bearer " + jetonB))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(0));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
         mvc.perform(get("/api/factures/" + factureA).header("Authorization", "Bearer " + jetonB))
                 .andExpect(status().isNotFound());
         mvc.perform(get("/api/clients/" + clientA + "/sites").header("Authorization", "Bearer " + jetonB))
                 .andExpect(status().isNotFound());
-        mvc.perform(post("/api/factures").header("Authorization", "Bearer " + jetonB)
-                .contentType(MediaType.APPLICATION_JSON).content("""
-                        {"clientId":%d,"lignes":[{"designation":"x","quantite":1,"prixUnitaireHt":1,"tauxTva":20}]}"""
-                        .formatted(clientA)))
+        mvc.perform(post("/api/factures")
+                        .header("Authorization", "Bearer " + jetonB)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {"clientId":%d,"lignes":[{"designation":"x","quantite":1,"prixUnitaireHt":1,"tauxTva":20}]}""".formatted(clientA)))
                 .andExpect(status().isNotFound());
 
         // Chaque entreprise a sa propre séquence de numéros.
         int clientB = id(envoyer(post("/api/clients"), jetonB, """
                 {"raisonSociale":"Client de B","siren":"444444442","adresse":"1 rue B","codePostal":"75002","ville":"Paris"}"""));
         int factureB = id(envoyer(post("/api/factures"), jetonB, """
-                {"clientId":%d,"lignes":[{"designation":"Vitrerie","quantite":1,"prixUnitaireHt":50,"tauxTva":20}]}"""
-                .formatted(clientB)));
-        assertThat(JsonPath.<String>read(envoyer(post("/api/factures/" + factureA + "/valider"), jetonA, null),
-                "$.numero")).endsWith("-00001");
-        assertThat(JsonPath.<String>read(envoyer(post("/api/factures/" + factureB + "/valider"), jetonB, null),
-                "$.numero")).endsWith("-00001");
+                {"clientId":%d,"lignes":[{"designation":"Vitrerie","quantite":1,"prixUnitaireHt":50,"tauxTva":20}]}""".formatted(clientB)));
+        assertThat(JsonPath.<String>read(
+                        envoyer(post("/api/factures/" + factureA + "/valider"), jetonA, null), "$.numero"))
+                .endsWith("-00001");
+        assertThat(JsonPath.<String>read(
+                        envoyer(post("/api/factures/" + factureB + "/valider"), jetonB, null), "$.numero"))
+                .endsWith("-00001");
     }
 
     @Test
     void lApiExigeUnJetonEtDesDonneesValides() throws Exception {
         mvc.perform(get("/api/clients")).andExpect(status().isUnauthorized());
         String jeton = inscrire("c@c.test", "555555556", "Propreté C");
-        mvc.perform(post("/api/clients").header("Authorization", "Bearer " + jeton)
-                .contentType(MediaType.APPLICATION_JSON).content("""
+        mvc.perform(post("/api/clients")
+                        .header("Authorization", "Bearer " + jeton)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
                         {"raisonSociale":"Sans SIREN","siren":"123","adresse":"x","codePostal":"x","ville":"x"}"""))
                 .andExpect(status().isBadRequest());
-        mvc.perform(post("/api/auth/connexion").contentType(MediaType.APPLICATION_JSON).content("""
+        mvc.perform(post("/api/auth/connexion")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
                 {"email":"c@c.test","motDePasse":"mauvais-mot-de-passe"}"""))
                 .andExpect(status().isUnauthorized());
-        mvc.perform(post("/api/auth/connexion").contentType(MediaType.APPLICATION_JSON).content("""
+        mvc.perform(post("/api/auth/connexion")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
                 {"email":"c@c.test","motDePasse":"mot-de-passe-solide"}"""))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.jeton").isNotEmpty());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jeton").isNotEmpty());
     }
 
     /** Inscription complète : création du compte puis confirmation par le lien reçu par e-mail. */
@@ -400,20 +431,24 @@ class ParcoursFacturationTest {
 
     private void demanderInscription(String email, String siren, String raisonSociale, String motDePasse)
             throws Exception {
-        mvc.perform(post("/api/auth/inscription").contentType(MediaType.APPLICATION_JSON).content("""
+        mvc.perform(post("/api/auth/inscription")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
                 {"email":"%s","motDePasse":"%s","raisonSociale":"%s","siren":"%s",
                  "tvaIntra":"FR00%s","adresse":"5 rue des Lilas","codePostal":"69003","ville":"Lyon",
-                 "iban":"FR7630006000011234567890189","bic":"AGRIFRPP"}"""
-                .formatted(email, motDePasse, raisonSociale, siren, siren)))
+                 "iban":"FR7630006000011234567890189","bic":"AGRIFRPP"}""".formatted(email, motDePasse, raisonSociale, siren, siren)))
                 .andExpect(status().isAccepted())
                 .andExpect(content().string(""));
     }
 
     private String confirmer(String jetonConfirmation) throws Exception {
-        String reponse = mvc.perform(post("/api/auth/confirmation").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"jeton\":\"%s\"}".formatted(jetonConfirmation)))
+        String reponse = mvc.perform(post("/api/auth/confirmation")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"jeton\":\"%s\"}".formatted(jetonConfirmation)))
                 .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
         return JsonPath.read(reponse, "$.jeton");
     }
 
@@ -425,7 +460,8 @@ class ParcoursFacturationTest {
 
     private org.springframework.test.web.servlet.ResultActions connecter(String email, String motDePasse)
             throws Exception {
-        return mvc.perform(post("/api/auth/connexion").contentType(MediaType.APPLICATION_JSON)
+        return mvc.perform(post("/api/auth/connexion")
+                .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"email\":\"%s\",\"motDePasse\":\"%s\"}".formatted(email, motDePasse)));
     }
 
@@ -434,14 +470,19 @@ class ParcoursFacturationTest {
         if (json != null) {
             requete.contentType(MediaType.APPLICATION_JSON).content(json);
         }
-        return mvc.perform(requete).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        return mvc.perform(requete)
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
     }
 
     private byte[] telecharger(int facture, String jeton) throws Exception {
         return mvc.perform(get("/api/factures/" + facture + "/facturx").header("Authorization", "Bearer " + jeton))
                 .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsByteArray();
+                .andReturn()
+                .getResponse()
+                .getContentAsByteArray();
     }
 
     private static int id(String json) {

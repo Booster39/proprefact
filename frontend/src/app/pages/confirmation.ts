@@ -12,7 +12,10 @@ import { Session } from '../session';
       <h1>Confirmation de votre adresse</h1>
       @if (erreur()) {
         <p class="erreur" role="alert">{{ erreur() }}</p>
-        <p class="info">Le lien a peut-être expiré ou déjà servi. Depuis la page de connexion, vous pouvez en demander un nouveau.</p>
+        <p class="info">
+          Le lien a peut-être expiré ou déjà servi. Depuis la page de connexion, vous pouvez en
+          demander un nouveau.
+        </p>
         <a routerLink="/connexion">Aller à la connexion</a>
       } @else {
         <p class="info" role="status">Activation de votre compte…</p>
@@ -31,12 +34,14 @@ export class Confirmation {
       this.erreur.set('Lien de confirmation incomplet.');
       return;
     }
-    inject(Api).confirmer(jeton).subscribe({
-      next: (j) => {
-        session.ouvrir(j);
-        router.navigateByUrl('/factures');
-      },
-      error: (e) => this.erreur.set(messageErreur(e)),
-    });
+    inject(Api)
+      .confirmer(jeton)
+      .subscribe({
+        next: (j) => {
+          session.ouvrir(j);
+          router.navigateByUrl('/factures');
+        },
+        error: (e) => this.erreur.set(messageErreur(e)),
+      });
   }
 }

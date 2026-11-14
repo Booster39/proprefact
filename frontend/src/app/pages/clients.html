@@ -1,19 +1,37 @@
 <h1>Clients et sites</h1>
-@if (erreur()) { <p class="erreur" role="alert">{{ erreur() }}</p> }
+@if (erreur()) {
+  <p class="erreur" role="alert">{{ erreur() }}</p>
+}
 
 <div class="carte">
   <h2>Nouveau client</h2>
   <form #form="ngForm" (ngSubmit)="creer(form)">
     <div class="grille">
-      <label>Raison sociale <input name="raisonSociale" [(ngModel)]="nouveau.raisonSociale" required /></label>
-      <label>SIREN (9 chiffres) <input name="siren" [(ngModel)]="nouveau.siren" required pattern="[0-9]{9}" inputmode="numeric" /></label>
+      <label
+        >Raison sociale <input name="raisonSociale" [(ngModel)]="nouveau.raisonSociale" required
+      /></label>
+      <label
+        >SIREN (9 chiffres)
+        <input
+          name="siren"
+          [(ngModel)]="nouveau.siren"
+          required
+          pattern="[0-9]{9}"
+          inputmode="numeric"
+      /></label>
       <label>N° de TVA <input name="tvaIntra" [(ngModel)]="nouveau.tvaIntra" /></label>
-      <label>Adresse de facturation <input name="adresse" [(ngModel)]="nouveau.adresse" required /></label>
-      <label>Code postal <input name="codePostal" [(ngModel)]="nouveau.codePostal" required /></label>
+      <label
+        >Adresse de facturation <input name="adresse" [(ngModel)]="nouveau.adresse" required
+      /></label>
+      <label
+        >Code postal <input name="codePostal" [(ngModel)]="nouveau.codePostal" required
+      /></label>
       <label>Ville <input name="ville" [(ngModel)]="nouveau.ville" required /></label>
       <label>E-mail <input type="email" name="email" [(ngModel)]="nouveau.email" /></label>
     </div>
-    <div class="actions"><button type="submit" [disabled]="form.invalid">Ajouter le client</button></div>
+    <div class="actions">
+      <button type="submit" [disabled]="form.invalid">Ajouter le client</button>
+    </div>
   </form>
 </div>
 
@@ -23,11 +41,20 @@
     <p class="info">Aucun client pour l'instant.</p>
   } @else {
     <table>
-      <thead><tr><th>Raison sociale</th><th>SIREN</th><th>Ville</th><th></th></tr></thead>
+      <thead>
+        <tr>
+          <th>Raison sociale</th>
+          <th>SIREN</th>
+          <th>Ville</th>
+          <th></th>
+        </tr>
+      </thead>
       <tbody>
         @for (c of clients(); track c.id) {
           <tr>
-            <td>{{ c.raisonSociale }}</td><td>{{ c.siren }}</td><td>{{ c.codePostal }} {{ c.ville }}</td>
+            <td>{{ c.raisonSociale }}</td>
+            <td>{{ c.siren }}</td>
+            <td>{{ c.codePostal }} {{ c.ville }}</td>
             <td><button class="secondaire petit" (click)="choisir(c)">Sites</button></td>
           </tr>
         }
@@ -44,10 +71,18 @@
     } @else {
       <div class="defilement">
         <table>
-          <thead><tr><th>Nom</th><th>Adresse</th></tr></thead>
+          <thead>
+            <tr>
+              <th>Nom</th>
+              <th>Adresse</th>
+            </tr>
+          </thead>
           <tbody>
             @for (s of sites(); track s.id) {
-              <tr><td>{{ s.nom }}</td><td>{{ s.adresse }}, {{ s.codePostal }} {{ s.ville }}</td></tr>
+              <tr>
+                <td>{{ s.nom }}</td>
+                <td>{{ s.adresse }}, {{ s.codePostal }} {{ s.ville }}</td>
+              </tr>
             }
           </tbody>
         </table>
@@ -57,10 +92,14 @@
       <div class="grille">
         <label>Nom du site <input name="nom" [(ngModel)]="nouveauSite.nom" required /></label>
         <label>Adresse <input name="adresse" [(ngModel)]="nouveauSite.adresse" required /></label>
-        <label>Code postal <input name="codePostal" [(ngModel)]="nouveauSite.codePostal" required /></label>
+        <label
+          >Code postal <input name="codePostal" [(ngModel)]="nouveauSite.codePostal" required
+        /></label>
         <label>Ville <input name="ville" [(ngModel)]="nouveauSite.ville" required /></label>
       </div>
-      <div class="actions"><button type="submit" [disabled]="formSite.invalid">Ajouter le site</button></div>
+      <div class="actions">
+        <button type="submit" [disabled]="formSite.invalid">Ajouter le site</button>
+      </div>
     </form>
   </div>
 }

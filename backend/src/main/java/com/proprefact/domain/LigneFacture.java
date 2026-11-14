@@ -1,13 +1,12 @@
 package com.proprefact.domain;
 
-import lombok.Getter;
-import lombok.Setter;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ManyToOne;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Getter
@@ -18,6 +17,7 @@ public class LigneFacture extends TenantEntity {
     /** Renseigné pour une ligne issue d'un contrat ; avec la période, empêche de facturer deux fois le même mois. */
     @ManyToOne(fetch = FetchType.LAZY)
     private Contrat contrat;
+
     private String periode;
     private String designation;
     private BigDecimal quantite;

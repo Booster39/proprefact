@@ -18,14 +18,19 @@ export class Clients {
   protected nouveauSite = this.siteVide();
 
   constructor() {
-    this.api.clients().subscribe({ next: (c) => this.clients.set(c), error: (e) => this.erreur.set(messageErreur(e)) });
+    this.api.clients().subscribe({
+      next: (c) => this.clients.set(c),
+      error: (e) => this.erreur.set(messageErreur(e)),
+    });
   }
 
   protected creer(form: NgForm): void {
     this.erreur.set('');
     this.api.creerClient(this.nouveau).subscribe({
       next: (c) => {
-        this.clients.update((liste) => [...liste, c].sort((a, b) => a.raisonSociale.localeCompare(b.raisonSociale)));
+        this.clients.update((liste) =>
+          [...liste, c].sort((a, b) => a.raisonSociale.localeCompare(b.raisonSociale)),
+        );
         this.nouveau = this.clientVide();
         form.resetForm(this.nouveau);
         this.choisir(c);
@@ -37,7 +42,10 @@ export class Clients {
   protected choisir(c: Client): void {
     this.selection.set(c);
     this.sites.set([]);
-    this.api.sites(c.id).subscribe({ next: (s) => this.sites.set(s), error: (e) => this.erreur.set(messageErreur(e)) });
+    this.api.sites(c.id).subscribe({
+      next: (s) => this.sites.set(s),
+      error: (e) => this.erreur.set(messageErreur(e)),
+    });
   }
 
   protected ajouterSite(form: NgForm): void {
@@ -55,7 +63,15 @@ export class Clients {
   }
 
   private clientVide() {
-    return { raisonSociale: '', siren: '', tvaIntra: '', adresse: '', codePostal: '', ville: '', email: '' };
+    return {
+      raisonSociale: '',
+      siren: '',
+      tvaIntra: '',
+      adresse: '',
+      codePostal: '',
+      ville: '',
+      email: '',
+    };
   }
 
   private siteVide() {
