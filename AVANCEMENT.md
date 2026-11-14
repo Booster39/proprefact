@@ -27,7 +27,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 8 | Services clients et contrats, cycles entre paquets | Fait | voir journal |
 | 9 | Duplications, e-mail hors transaction, configuration | Fait | voir journal |
 | 10 | Découpage de `FacturXService` | Fait | voir journal |
-| 11 | Migration V5 et compteur | À faire | |
+| 11 | Migration V5 et compteur | Fait | voir journal |
 | 12 | Front : découpage, typage, erreurs, double clic | À faire | |
 | 13 | Front : connexion, styles, accessibilité, tests | À faire | |
 | 14 | Projet : licences, README, divers | À faire | |
@@ -40,7 +40,7 @@ Après le dernier lot terminé, ces commandes donnent :
 
 | Commande | Résultat |
 |---|---|
-| `cd backend && ./mvnw -B verify` (Docker lancé) | 26 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
+| `cd backend && ./mvnw -B verify` (Docker lancé) | 27 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
 | `cd frontend && npm run format:check` | `All matched files use Prettier code style!` |
 | `cd frontend && npm run lint` | `All files pass linting.` |
 | `cd frontend && npm test` | 3 fichiers, 5 tests réussis |
@@ -114,6 +114,9 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 - **Méthode pour un remaniement sans changement de résultat** (utilisée au lot 10) : avant de
   toucher au code, écrire un test provisoire qui enregistre le résultat dans un fichier ; refaire
   tourner après ; comparer avec `diff` ; supprimer le test provisoire.
+- **Lot 11, nouvelle valeur de statut.** La contrainte `facture_statut_connu` liste les valeurs de
+  `StatutFacture`. Ajouter une valeur à l'énumération exige une migration qui remplace la
+  contrainte, sinon l'enregistrement échoue.
 
 ## Journal
 
@@ -129,3 +132,4 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 | 2026-11-14 | 8 | Objets reçus déplacés dans `service.commande` (`…Commande`, `JetonConnexion`, `Messages`) ; nouveaux `ClientService` et `ContratService` ; contrôleurs sans dépôt ni `@Transactional` ; `FichierFacture` ; `RelanceDepots` dans `service`, `TenantResolver` dans `tenant`, `@EnableScheduling` sur l'application ; règle de date de fin dans `Contrat.terminerLe` ; 2 tests ajoutés. |
 | 2026-11-14 | 9 | `Empreinte` et `Textes` remplacent les copies ; les e-mails partent après validation de la transaction (`EmailAEnvoyer`, `EnvoiEmails`) ; réglages `app.*` regroupés et validés dans `proprietes/ProprietesApp` ; identifiants de base par défaut déplacés dans le profil `dev`. Démarrage réel vérifié en profil `dev` contre PostgreSQL (4 migrations appliquées, inscription 202, lien de confirmation dans le journal). |
 | 2026-11-14 | 10 | `FacturXService` éclaté dans `service/facturx/` : `FactureXml` (données Mustang), `FacturePdf` (mise en page), `Mentions`, et un `FacturXService` de 42 lignes ; variables renommées, coordonnées nommées, caractères invisibles remplacés par leurs codes, police absente signalée clairement, PDFBox et XMPBox déclarés ; test `FacturXServiceTest` (3 tests). Fichier produit comparé avant et après sur une facture à 3 taux : XML, texte et flux de dessin de la page identiques. |
+| 2026-11-14 | 11 | Migration `V5__index_et_contraintes.sql` (5 index, contrainte sur le statut, unicité de l'e-mail sans casse), appliquée sur PostgreSQL ; `CompteurFactureRepository.creerSiAbsent` avant le verrou ; test `desValidationsSimultaneesNumerotentSansDoublonNiTrou` (6 validations en parallèle), qui échoue avec l'ancien code (clé dupliquée, vérifié). |

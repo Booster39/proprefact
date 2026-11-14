@@ -137,13 +137,9 @@ public class FacturationService {
         Facture f = charger(id);
         f.exiger(StatutFacture.BROUILLON); // avant de consommer un numéro
         LocalDate aujourdhui = LocalDate.now(horloge);
-        CompteurFacture compteur = compteurs.findByAnnee(aujourdhui.getYear()).orElseGet(() -> {
-            CompteurFacture c = new CompteurFacture();
-            c.setAnnee(aujourdhui.getYear());
-            return c;
-        });
+        compteurs.creerSiAbsent(tenant.resolveCurrentTenantIdentifier(), aujourdhui.getYear());
+        CompteurFacture compteur = compteurs.findByAnnee(aujourdhui.getYear()).orElseThrow();
         compteur.setDernierNumero(compteur.getDernierNumero() + 1);
-        compteurs.save(compteur);
 
         String numero = "F-%d-%05d".formatted(compteur.getAnnee(), compteur.getDernierNumero());
         f.valider(numero, aujourdhui, DELAI_PAIEMENT_JOURS, entrepriseCourante());

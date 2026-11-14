@@ -485,6 +485,32 @@ class ParcoursFacturationTest {
         assertThat(JsonPath.<String>read(resilie, "$.client")).isEqualTo("Client");
     }
 
+    @Test
+    void desValidationsSimultaneesNumerotentSansDoublonNiTrou() throws Exception {
+        String jeton = inscrire("simultane@simultane.test", "727272727", "Propreté Simultanée");
+        int client = id(envoyer(post("/api/clients"), jeton, """
+                {"raisonSociale":"Client","siren":"123456789","adresse":"a","codePostal":"75001","ville":"Paris"}"""));
+        List<Integer> brouillons = new java.util.ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            brouillons.add(id(envoyer(post("/api/factures"), jeton, """
+                    {"clientId":%d,"lignes":[{"designation":"Vitrerie","quantite":1,"prixUnitaireHt":100,"tauxTva":20}]}""".formatted(client))));
+        }
+
+        // Aucune facture n'a encore été validée cette année : le compteur lui-même n'existe pas.
+        List<String> numeros = new CopyOnWriteArrayList<>();
+        try (var executeur = java.util.concurrent.Executors.newFixedThreadPool(brouillons.size())) {
+            for (int brouillon : brouillons) {
+                executeur.submit(() -> {
+                    String validee = envoyer(post("/api/factures/" + brouillon + "/valider"), jeton, null);
+                    numeros.add(JsonPath.<String>read(validee, "$.numero").replaceFirst("F-\\d{4}-", ""));
+                    return null;
+                });
+            }
+        }
+
+        assertThat(numeros).containsExactlyInAnyOrder("00001", "00002", "00003", "00004", "00005", "00006");
+    }
+
     /** Inscription complète : création du compte puis confirmation par le lien reçu par e-mail. */
     private String inscrire(String email, String siren, String raisonSociale) throws Exception {
         demanderInscription(email, siren, raisonSociale, "mot-de-passe-solide");
