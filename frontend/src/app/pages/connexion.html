@@ -61,6 +61,9 @@
     @if (erreur()) {
       <p class="erreur" role="alert">{{ erreur() }}</p>
     }
+    @if (form.invalid && form.touched) {
+      <p class="info">Complétez les champs entourés en rouge pour continuer.</p>
+    }
     <div class="actions">
       <button type="submit" [disabled]="form.invalid || enCours()">
         {{ inscription() ? 'Créer le compte' : 'Se connecter' }}

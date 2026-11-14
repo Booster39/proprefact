@@ -65,6 +65,10 @@ select:focus {
   outline: 2px solid var(--accent);
   outline-offset: -1px;
 }
+input.ng-invalid.ng-touched,
+select.ng-invalid.ng-touched {
+  border-color: var(--alerte);
+}
 label.case {
   display: flex;
   align-items: center;

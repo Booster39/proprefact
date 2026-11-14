@@ -66,6 +66,9 @@
           >Fin (facultative) <input type="date" name="dateFin" [(ngModel)]="nouveau.dateFin"
         /></label>
       </div>
+      @if (form.invalid && form.touched) {
+        <p class="info">Complétez les champs entourés en rouge pour continuer.</p>
+      }
       <div class="actions">
         <button type="submit" [disabled]="form.invalid">Ajouter le contrat</button>
       </div>

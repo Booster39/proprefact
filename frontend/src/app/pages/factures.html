@@ -65,6 +65,9 @@
             step="0.1"
         /></label>
       </div>
+      @if (form.invalid && form.touched) {
+        <p class="info">Complétez les champs entourés en rouge pour continuer.</p>
+      }
       <div class="actions">
         <button type="submit" [disabled]="form.invalid">Créer le brouillon</button>
       </div>

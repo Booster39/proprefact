@@ -29,6 +29,9 @@
       <label>Ville <input name="ville" [(ngModel)]="nouveau.ville" required /></label>
       <label>E-mail <input type="email" name="email" [(ngModel)]="nouveau.email" /></label>
     </div>
+    @if (form.invalid && form.touched) {
+      <p class="info">Complétez les champs entourés en rouge pour continuer.</p>
+    }
     <div class="actions">
       <button type="submit" [disabled]="form.invalid">Ajouter le client</button>
     </div>
@@ -97,6 +100,9 @@
         /></label>
         <label>Ville <input name="ville" [(ngModel)]="nouveauSite.ville" required /></label>
       </div>
+      @if (formSite.invalid && formSite.touched) {
+        <p class="info">Complétez les champs entourés en rouge pour continuer.</p>
+      }
       <div class="actions">
         <button type="submit" [disabled]="formSite.invalid">Ajouter le site</button>
       </div>
