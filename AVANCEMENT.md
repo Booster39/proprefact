@@ -18,7 +18,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | Lot | Sujet | État | Commit |
 |---|---|---|---|
 | 1 | Outillage | Fait | voir journal |
-| 2 | Validation et erreurs lisibles (back) | À faire | |
+| 2 | Validation et erreurs lisibles (back) | Fait | voir journal |
 | 3 | Affichage des erreurs de validation (front) | À faire | |
 | 4 | Horloge injectable et dates locales | À faire | |
 | 5 | Tests sur PostgreSQL et profil de test | Bloqué : pas de Docker dans l'environnement utilisé | |
@@ -40,7 +40,7 @@ Après le dernier lot terminé, ces commandes donnent :
 
 | Commande | Résultat |
 |---|---|
-| `cd backend && ./mvnw -B verify` | 10 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
+| `cd backend && ./mvnw -B verify` | 11 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
 | `cd frontend && npm run format:check` | `All matched files use Prettier code style!` |
 | `cd frontend && npm run lint` | `All files pass linting.` |
 | `cd frontend && npm test` | 2 fichiers, 3 tests réussis |
@@ -62,9 +62,16 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 - **Docker.** Le démon Docker ne tourne pas dans l'environnement utilisé jusqu'ici : les lots 5 et
   11 n'y sont pas faisables. Ils sont à faire sur un poste où `docker info` affiche
   `Server Version`.
+- **Lot 2, messages de validation.** Les messages (« obligatoire », « 200 caractères au plus »…)
+  sont des constantes en tête de `Dtos.java` (`OBLIGATOIRE`, `MAX_200`…) au lieu d'être répétés
+  dans chaque annotation comme l'écrit le lot. Le résultat est identique. Pour un nouveau champ,
+  réutilise ces constantes.
+- **Lot 2, formatage.** Spotless place une ligne vide entre les champs d'un `record` dès qu'un
+  champ porte plusieurs annotations : c'est normal, ne le corrige pas à la main.
 
 ## Journal
 
 | Date | Lot | Résumé |
 |---|---|---|
 | 2026-11-14 | 1 | Maven Wrapper, Spotless (42 fichiers Java reformatés), Prettier (16 fichiers), ESLint, cible de tests Vitest avec 2 fichiers de tests, `.editorconfig`, `.gitattributes`, intégration continue GitHub, README. |
+| 2026-11-14 | 2 | Tailles et décimales validées sur tous les objets reçus, messages en français, `ErreursApi` renvoie une propriété `erreurs` par champ et ne laisse plus passer d'erreur 500 sur une contrainte de base, nouveau test `lesDonneesInvalidesSontRefuseesChampParChamp`. |

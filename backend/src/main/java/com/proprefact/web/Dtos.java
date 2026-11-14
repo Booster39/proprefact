@@ -6,7 +6,9 @@ import com.proprefact.domain.Facture;
 import com.proprefact.domain.Site;
 import com.proprefact.domain.StatutFacture;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -23,42 +25,88 @@ public final class Dtos {
 
     static final String SIREN = "\\d{9}";
 
-    public record InscriptionReq(
-            @NotBlank @Email String email,
-            @NotBlank @Size(min = 10, max = 72) String motDePasse,
-            @NotBlank String raisonSociale,
+    // Messages affichés tels quels à l'utilisateur, à côté du nom du champ.
+    static final String OBLIGATOIRE = "obligatoire";
+    static final String SIREN_INVALIDE = "9 chiffres attendus";
+    static final String EMAIL_INVALIDE = "adresse e-mail invalide";
+    static final String MAX_10 = "10 caractères au plus";
+    static final String MAX_11 = "11 caractères au plus";
+    static final String MAX_20 = "20 caractères au plus";
+    static final String MAX_34 = "34 caractères au plus";
+    static final String MAX_100 = "100 caractères au plus";
+    static final String MAX_200 = "200 caractères au plus";
+    static final String MAX_300 = "300 caractères au plus";
+    static final String MAX_500 = "500 caractères au plus";
+    static final String DEUX_DECIMALES = "2 décimales au plus";
+    static final String TROIS_DECIMALES = "3 décimales au plus";
+    static final String POSITIF = "doit être supérieur à zéro";
+    static final String NON_NEGATIF = "ne peut pas être négatif";
 
-            @NotBlank @Pattern(regexp = SIREN, message = "9 chiffres attendus")
+    // Les tailles maximales sont celles des colonnes de la base (migration V1).
+
+    public record InscriptionReq(
+            @NotBlank(message = OBLIGATOIRE) @Email(message = EMAIL_INVALIDE) @Size(max = 200, message = MAX_200)
+            String email,
+
+            @NotBlank(message = OBLIGATOIRE) @Size(min = 10, max = 72, message = "entre 10 et 72 caractères")
+            String motDePasse,
+
+            @NotBlank(message = OBLIGATOIRE) @Size(max = 200, message = MAX_200)
+            String raisonSociale,
+
+            @NotBlank(message = OBLIGATOIRE) @Pattern(regexp = SIREN, message = SIREN_INVALIDE)
             String siren,
 
-            String tvaIntra,
-            @NotBlank String adresse,
-            @NotBlank String codePostal,
-            @NotBlank String ville,
-            String iban,
-            String bic,
+            @Size(max = 20, message = MAX_20) String tvaIntra,
+
+            @NotBlank(message = OBLIGATOIRE) @Size(max = 200, message = MAX_200)
+            String adresse,
+
+            @NotBlank(message = OBLIGATOIRE) @Size(max = 10, message = MAX_10)
+            String codePostal,
+
+            @NotBlank(message = OBLIGATOIRE) @Size(max = 100, message = MAX_100)
+            String ville,
+
+            @Size(max = 34, message = MAX_34) String iban,
+            @Size(max = 11, message = MAX_11) String bic,
             Boolean optionTvaDebits) {}
 
     public record ConnexionReq(
-            @NotBlank String email, @NotBlank String motDePasse) {}
+            @NotBlank(message = OBLIGATOIRE) @Size(max = 200, message = MAX_200)
+            String email,
 
-    public record ConfirmationReq(@NotBlank String jeton) {}
+            @NotBlank(message = OBLIGATOIRE) String motDePasse) {}
 
-    public record EmailReq(@NotBlank @Email String email) {}
+    public record ConfirmationReq(
+            @NotBlank(message = OBLIGATOIRE) String jeton) {}
+
+    public record EmailReq(
+            @NotBlank(message = OBLIGATOIRE) @Email(message = EMAIL_INVALIDE) @Size(max = 200, message = MAX_200)
+            String email) {}
 
     public record JetonDto(String jeton, String raisonSociale) {}
 
     public record ClientReq(
-            @NotBlank String raisonSociale,
+            @NotBlank(message = OBLIGATOIRE) @Size(max = 200, message = MAX_200)
+            String raisonSociale,
 
-            @NotBlank @Pattern(regexp = SIREN, message = "9 chiffres attendus")
+            @NotBlank(message = OBLIGATOIRE) @Pattern(regexp = SIREN, message = SIREN_INVALIDE)
             String siren,
 
-            String tvaIntra,
-            @NotBlank String adresse,
-            @NotBlank String codePostal,
-            @NotBlank String ville,
-            @Email String email) {}
+            @Size(max = 20, message = MAX_20) String tvaIntra,
+
+            @NotBlank(message = OBLIGATOIRE) @Size(max = 200, message = MAX_200)
+            String adresse,
+
+            @NotBlank(message = OBLIGATOIRE) @Size(max = 10, message = MAX_10)
+            String codePostal,
+
+            @NotBlank(message = OBLIGATOIRE) @Size(max = 100, message = MAX_100)
+            String ville,
+
+            @Email(message = EMAIL_INVALIDE) @Size(max = 200, message = MAX_200)
+            String email) {}
 
     public record ClientDto(
             Long id,
@@ -83,10 +131,17 @@ public final class Dtos {
     }
 
     public record SiteReq(
-            @NotBlank String nom,
-            @NotBlank String adresse,
-            @NotBlank String codePostal,
-            @NotBlank String ville) {}
+            @NotBlank(message = OBLIGATOIRE) @Size(max = 200, message = MAX_200)
+            String nom,
+
+            @NotBlank(message = OBLIGATOIRE) @Size(max = 200, message = MAX_200)
+            String adresse,
+
+            @NotBlank(message = OBLIGATOIRE) @Size(max = 10, message = MAX_10)
+            String codePostal,
+
+            @NotBlank(message = OBLIGATOIRE) @Size(max = 100, message = MAX_100)
+            String ville) {}
 
     public record SiteDto(Long id, Long clientId, String nom, String adresse, String codePostal, String ville) {
         static SiteDto de(Site s) {
@@ -96,11 +151,23 @@ public final class Dtos {
     }
 
     public record ContratReq(
-            @NotNull Long siteId,
-            @NotBlank String libelle,
-            @NotNull @DecimalMin("0.01") BigDecimal montantMensuelHt,
-            @NotNull @DecimalMin("0") BigDecimal tauxTva,
-            @NotNull LocalDate dateDebut,
+            @NotNull(message = OBLIGATOIRE) Long siteId,
+
+            @NotBlank(message = OBLIGATOIRE) @Size(max = 300, message = MAX_300)
+            String libelle,
+
+            @NotNull(message = OBLIGATOIRE)
+            @DecimalMin(value = "0.01", message = POSITIF)
+            @Digits(integer = 10, fraction = 2, message = DEUX_DECIMALES)
+            BigDecimal montantMensuelHt,
+
+            @NotNull(message = OBLIGATOIRE)
+            @DecimalMin(value = "0", message = NON_NEGATIF)
+            @DecimalMax(value = "100", message = "100 au plus")
+            @Digits(integer = 3, fraction = 2, message = DEUX_DECIMALES)
+            BigDecimal tauxTva,
+
+            @NotNull(message = OBLIGATOIRE) LocalDate dateDebut,
             LocalDate dateFin) {}
 
     public record ContratDto(
@@ -128,13 +195,30 @@ public final class Dtos {
     }
 
     public record LigneReq(
-            @NotBlank String designation,
-            @NotNull @DecimalMin("0.001") BigDecimal quantite,
-            @NotNull @DecimalMin("0") BigDecimal prixUnitaireHt,
-            @NotNull @DecimalMin("0") BigDecimal tauxTva) {}
+            @NotBlank(message = OBLIGATOIRE) @Size(max = 500, message = MAX_500)
+            String designation,
+
+            @NotNull(message = OBLIGATOIRE)
+            @DecimalMin(value = "0.001", message = POSITIF)
+            @Digits(integer = 9, fraction = 3, message = TROIS_DECIMALES)
+            BigDecimal quantite,
+
+            // La base garde 2 décimales : en accepter plus ferait changer le total à la validation.
+            @NotNull(message = OBLIGATOIRE)
+            @DecimalMin(value = "0", message = NON_NEGATIF)
+            @Digits(integer = 10, fraction = 2, message = DEUX_DECIMALES)
+            BigDecimal prixUnitaireHt,
+
+            @NotNull(message = OBLIGATOIRE)
+            @DecimalMin(value = "0", message = NON_NEGATIF)
+            @DecimalMax(value = "100", message = "100 au plus")
+            @Digits(integer = 3, fraction = 2, message = DEUX_DECIMALES)
+            BigDecimal tauxTva) {}
 
     public record FactureReq(
-            @NotNull Long clientId, @NotEmpty @Valid List<LigneReq> lignes) {}
+            @NotNull(message = OBLIGATOIRE) Long clientId,
+
+            @NotEmpty(message = "au moins une ligne") @Valid List<LigneReq> lignes) {}
 
     public record LigneDto(
             String designation,

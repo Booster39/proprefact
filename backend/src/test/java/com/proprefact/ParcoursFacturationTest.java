@@ -423,6 +423,32 @@ class ParcoursFacturationTest {
                 .andExpect(jsonPath("$.jeton").isNotEmpty());
     }
 
+    @Test
+    void lesDonneesInvalidesSontRefuseesChampParChamp() throws Exception {
+        String jeton = inscrire("valid@valid.test", "909090909", "Propreté Valide");
+        mvc.perform(post("/api/clients")
+                        .header("Authorization", "Bearer " + jeton)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {"raisonSociale":"","siren":"12","adresse":"a","codePostal":"75001 CEDEX 08","ville":"Paris"}"""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Données invalides : vérifiez les champs signalés"))
+                .andExpect(jsonPath("$.erreurs.raisonSociale").value("obligatoire"))
+                .andExpect(jsonPath("$.erreurs.siren").value("9 chiffres attendus"))
+                .andExpect(jsonPath("$.erreurs.codePostal").value("10 caractères au plus"));
+
+        // Un prix à 3 décimales serait arrondi par la base : le total changerait entre brouillon et validation.
+        int client = id(envoyer(post("/api/clients"), jeton, """
+                {"raisonSociale":"Client","siren":"123456789","adresse":"a","codePostal":"75001","ville":"Paris"}"""));
+        mvc.perform(post("/api/factures")
+                        .header("Authorization", "Bearer " + jeton)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {"clientId":%d,"lignes":[{"designation":"d","quantite":100,"prixUnitaireHt":0.014,"tauxTva":20}]}""".formatted(client)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erreurs['lignes[0].prixUnitaireHt']").value("2 décimales au plus"));
+    }
+
     /** Inscription complète : création du compte puis confirmation par le lien reçu par e-mail. */
     private String inscrire(String email, String siren, String raisonSociale) throws Exception {
         demanderInscription(email, siren, raisonSociale, "mot-de-passe-solide");
