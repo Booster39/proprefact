@@ -2,23 +2,20 @@ package com.proprefact.service;
 
 import com.proprefact.domain.Entreprise;
 import com.proprefact.domain.Utilisateur;
+import com.proprefact.proprietes.ProprietesApp;
 import com.proprefact.repo.EntrepriseRepository;
 import com.proprefact.repo.UtilisateurRepository;
 import com.proprefact.service.commande.ConnexionCommande;
 import com.proprefact.service.commande.InscriptionCommande;
 import com.proprefact.service.commande.JetonConnexion;
 import com.proprefact.tenant.TenantResolver;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.HexFormat;
 import java.util.Optional;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -38,7 +35,7 @@ public class AuthService {
     private final UtilisateurRepository utilisateurs;
     private final PasswordEncoder encodeur;
     private final JwtEncoder jwt;
-    private final Messagerie messagerie;
+    private final ApplicationEventPublisher evenements;
     private final Clock horloge;
     private final Duration duree;
     private final String urlPublique;
@@ -51,18 +48,17 @@ public class AuthService {
             UtilisateurRepository utilisateurs,
             PasswordEncoder encodeur,
             JwtEncoder jwt,
-            Messagerie messagerie,
-            @Value("${app.jwt.duree-heures}") long dureeHeures,
-            @Value("${app.url-publique}") String urlPublique,
+            ApplicationEventPublisher evenements,
+            ProprietesApp proprietes,
             Clock horloge) {
         this.entreprises = entreprises;
         this.utilisateurs = utilisateurs;
         this.encodeur = encodeur;
         this.jwt = jwt;
-        this.messagerie = messagerie;
+        this.evenements = evenements;
         this.horloge = horloge;
-        this.duree = Duration.ofHours(dureeHeures);
-        this.urlPublique = urlPublique.replaceAll("/+$", "");
+        this.duree = Duration.ofHours(proprietes.jwt().dureeHeures());
+        this.urlPublique = proprietes.urlPublique().replaceAll("/+$", "");
         this.hashFactice = encodeur.encode(jetonAleatoire());
     }
 
@@ -72,18 +68,19 @@ public class AuthService {
      */
     @Transactional
     public void inscrire(InscriptionCommande req) {
-        String email = req.email().trim().toLowerCase();
+        String email = Textes.emailNormalise(req.email());
         String hash = encodeur.encode(req.motDePasse());
         Optional<Utilisateur> existant = utilisateurs.findByEmailIgnoreCase(email);
         if (existant.isPresent() && existant.get().isEmailVerifie()) {
-            messagerie.envoyer(email, "Vous avez déjà un compte ProPreFact", """
+            evenements.publishEvent(
+                    new EmailAEnvoyer(email, "Vous avez déjà un compte ProPreFact", """
                     Bonjour,
 
                     Une inscription vient d'être demandée avec cette adresse, mais un compte existe déjà.
                     Connectez-vous ici : %s/connexion
 
                     Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.
-                    """.formatted(urlPublique));
+                    """.formatted(urlPublique)));
             return;
         }
         // Une inscription jamais confirmée est remplacée : elle ne bloque pas l'adresse.
@@ -91,12 +88,12 @@ public class AuthService {
         Entreprise e = u.getEntreprise() != null ? u.getEntreprise() : new Entreprise();
         e.setRaisonSociale(req.raisonSociale());
         e.setSiren(req.siren());
-        e.setTvaIntra(vide(req.tvaIntra()));
+        e.setTvaIntra(Textes.ouNull(req.tvaIntra()));
         e.setAdresse(req.adresse());
         e.setCodePostal(req.codePostal());
         e.setVille(req.ville());
-        e.setIban(vide(req.iban()));
-        e.setBic(vide(req.bic()));
+        e.setIban(Textes.ouNull(req.iban()));
+        e.setBic(Textes.ouNull(req.bic()));
         e.setOptionTvaDebits(Boolean.TRUE.equals(req.optionTvaDebits()));
         entreprises.save(e);
 
@@ -111,7 +108,7 @@ public class AuthService {
     @Transactional
     public void renvoyerConfirmation(String email) {
         utilisateurs
-                .findByEmailIgnoreCase(email.trim())
+                .findByEmailIgnoreCase(Textes.emailNormalise(email))
                 .filter(u -> !u.isEmailVerifie())
                 .ifPresent(this::envoyerConfirmation);
     }
@@ -119,7 +116,7 @@ public class AuthService {
     @Transactional
     public JetonConnexion confirmer(String jetonConfirmation) {
         Utilisateur u = utilisateurs
-                .findByJetonConfirmationHash(sha256(jetonConfirmation))
+                .findByJetonConfirmationHash(Empreinte.sha256(jetonConfirmation))
                 .filter(x ->
                         x.getJetonExpireLe() != null && x.getJetonExpireLe().isAfter(horloge.instant()))
                 .orElseThrow(() ->
@@ -132,8 +129,7 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public JetonConnexion connecter(ConnexionCommande req) {
-        Optional<Utilisateur> trouve =
-                utilisateurs.findByEmailIgnoreCase(req.email().trim());
+        Optional<Utilisateur> trouve = utilisateurs.findByEmailIgnoreCase(Textes.emailNormalise(req.email()));
         boolean motDePasseCorrect = encodeur.matches(
                 req.motDePasse(), trouve.map(Utilisateur::getMotDePasseHash).orElse(hashFactice));
         if (trouve.isEmpty() || !motDePasseCorrect) {
@@ -148,9 +144,10 @@ public class AuthService {
 
     private void envoyerConfirmation(Utilisateur u) {
         String jetonConfirmation = jetonAleatoire();
-        u.setJetonConfirmationHash(sha256(jetonConfirmation));
+        u.setJetonConfirmationHash(Empreinte.sha256(jetonConfirmation));
         u.setJetonExpireLe(horloge.instant().plus(VALIDITE_CONFIRMATION));
-        messagerie.envoyer(u.getEmail(), "Confirmez votre adresse e-mail – ProPreFact", """
+        evenements.publishEvent(
+                new EmailAEnvoyer(u.getEmail(), "Confirmez votre adresse e-mail – ProPreFact", """
                 Bonjour,
 
                 Pour activer votre compte ProPreFact, ouvrez ce lien (valable 24 heures) :
@@ -158,7 +155,7 @@ public class AuthService {
 
                 Si vous n'êtes pas à l'origine de cette inscription, ignorez ce message.
                 """.formatted(
-                        urlPublique, jetonConfirmation));
+                                urlPublique, jetonConfirmation)));
     }
 
     private JetonConnexion jeton(Utilisateur u) {
@@ -179,18 +176,5 @@ public class AuthService {
         byte[] octets = new byte[32];
         alea.nextBytes(octets);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(octets);
-    }
-
-    private static String sha256(String valeur) {
-        try {
-            return HexFormat.of()
-                    .formatHex(MessageDigest.getInstance("SHA-256").digest(valeur.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    private static String vide(String s) {
-        return s == null || s.isBlank() ? null : s.trim();
     }
 }

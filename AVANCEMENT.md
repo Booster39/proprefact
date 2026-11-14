@@ -25,7 +25,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 6 | Course entre requêtes (front) | Fait | voir journal |
 | 7 | Règles métier dans `Facture`, exceptions métier | Fait | voir journal |
 | 8 | Services clients et contrats, cycles entre paquets | Fait | voir journal |
-| 9 | Duplications, e-mail hors transaction, configuration | À faire | |
+| 9 | Duplications, e-mail hors transaction, configuration | Fait | voir journal |
 | 10 | Découpage de `FacturXService` | À faire | |
 | 11 | Migration V5 et compteur | À faire | |
 | 12 | Front : découpage, typage, erreurs, double clic | À faire | |
@@ -94,6 +94,17 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
   `grep -rn "import com.proprefact.web" backend/src/main/java/com/proprefact/service backend/src/main/java/com/proprefact/domain` ;
   `grep -rnE "import com.proprefact.repo|@Transactional" backend/src/main/java/com/proprefact/web` ;
   `grep -rn "import com.proprefact\\.\\(service\\|web\\|repo\\|config\\|tenant\\)" backend/src/main/java/com/proprefact/domain`.
+- **Lot 9, paquet `proprietes`.** `ProprietesApp` est dans `com.proprefact.proprietes` et non dans
+  `config` comme l'écrivait le lot : `service` en a besoin, et `config` dépend déjà de `service`.
+  `proprietes` ne dépend d'aucun autre paquet du projet.
+- **Lot 9, changement de comportement voulu.** Si le serveur de messagerie échoue, l'inscription
+  répond quand même 202 et le compte est créé ; l'erreur est dans le journal et l'utilisateur
+  redemande le lien. Avant, l'inscription échouait en 500 et rien n'était enregistré.
+- **Lot 9, base de données.** Sans profil `dev`, l'application ne démarre plus si `DB_URL`,
+  `DB_USER` ou `DB_PASSWORD` manque : c'est voulu (plus d'identifiants par défaut en production).
+- **Vérifier un démarrage réel.** `docker compose up -d`, puis dans `backend/` :
+  `SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run`. Le journal doit contenir
+  `Started ProprefactApplication`. À faire après tout lot qui touche à la configuration.
 
 ## Journal
 
@@ -107,3 +118,4 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 | 2026-11-14 | 6 | `switchMap` sur le chargement des sites dans `Clients` et `Contrats` ; test `clients.spec.ts` qui reproduit la course (il échoue sans la correction, vérifié). |
 | 2026-11-14 | 7 | `Facture` n'a plus de setters : création par `Facture.brouillon`, transitions `valider`, `demanderDepot`, `enregistrerDepotReussi`, `enregistrerDepotEchoue`, `marquerPayee`, `exiger` ; `tvaParTaux()` sert aux totaux et au PDF ; exceptions `TransitionInterditeException` (409) et `IntrouvableException` (404) ; tests `FactureTest`, `ContratTest`, `DepotServiceTest`. |
 | 2026-11-14 | 8 | Objets reçus déplacés dans `service.commande` (`…Commande`, `JetonConnexion`, `Messages`) ; nouveaux `ClientService` et `ContratService` ; contrôleurs sans dépôt ni `@Transactional` ; `FichierFacture` ; `RelanceDepots` dans `service`, `TenantResolver` dans `tenant`, `@EnableScheduling` sur l'application ; règle de date de fin dans `Contrat.terminerLe` ; 2 tests ajoutés. |
+| 2026-11-14 | 9 | `Empreinte` et `Textes` remplacent les copies ; les e-mails partent après validation de la transaction (`EmailAEnvoyer`, `EnvoiEmails`) ; réglages `app.*` regroupés et validés dans `proprietes/ProprietesApp` ; identifiants de base par défaut déplacés dans le profil `dev`. Démarrage réel vérifié en profil `dev` contre PostgreSQL (4 migrations appliquées, inscription 202, lien de confirmation dans le journal). |

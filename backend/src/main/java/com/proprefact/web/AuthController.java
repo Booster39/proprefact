@@ -1,7 +1,9 @@
 package com.proprefact.web;
 
+import com.proprefact.proprietes.ProprietesApp;
 import com.proprefact.service.AuthService;
 import com.proprefact.service.LimiteurTentatives;
+import com.proprefact.service.Textes;
 import com.proprefact.service.commande.ConnexionCommande;
 import com.proprefact.service.commande.InscriptionCommande;
 import com.proprefact.service.commande.JetonConnexion;
@@ -10,7 +12,6 @@ import com.proprefact.web.Dtos.EmailReq;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.Duration;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -29,15 +30,11 @@ class AuthController {
     private final int maxParIp;
     private final int maxEchecsParEmail;
 
-    AuthController(
-            AuthService auth,
-            LimiteurTentatives limiteur,
-            @Value("${app.auth.max-requetes-par-ip}") int maxParIp,
-            @Value("${app.auth.max-echecs-par-email}") int maxEchecsParEmail) {
+    AuthController(AuthService auth, LimiteurTentatives limiteur, ProprietesApp proprietes) {
         this.auth = auth;
         this.limiteur = limiteur;
-        this.maxParIp = maxParIp;
-        this.maxEchecsParEmail = maxEchecsParEmail;
+        this.maxParIp = proprietes.auth().maxRequetesParIp();
+        this.maxEchecsParEmail = proprietes.auth().maxEchecsParEmail();
     }
 
     /** Répond toujours 202, que l'adresse soit nouvelle ou déjà inscrite. */
@@ -64,7 +61,7 @@ class AuthController {
     @PostMapping("/connexion")
     JetonConnexion connexion(@Valid @RequestBody ConnexionCommande req, HttpServletRequest http) {
         limiterParIp(http);
-        String cleEchecs = "echecs:" + req.email().trim().toLowerCase();
+        String cleEchecs = "echecs:" + Textes.emailNormalise(req.email());
         if (limiteur.atteinte(cleEchecs, maxEchecsParEmail, FENETRE)) {
             throw tropDeTentatives();
         }

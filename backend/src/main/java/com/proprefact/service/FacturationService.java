@@ -20,14 +20,11 @@ import com.proprefact.repo.LigneFactureRepository;
 import com.proprefact.service.commande.FactureCommande;
 import com.proprefact.tenant.TenantResolver;
 import java.math.BigDecimal;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
-import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -185,17 +182,9 @@ public class FacturationService {
                 .map(FactureDocument::getContenu)
                 .orElseGet(() -> {
                     byte[] contenu = facturX.generer(f);
-                    documents.save(new FactureDocument(f, contenu, sha256(contenu), horloge.instant()));
+                    documents.save(new FactureDocument(f, contenu, Empreinte.sha256(contenu), horloge.instant()));
                     return contenu;
                 });
-    }
-
-    private static String sha256(byte[] contenu) {
-        try {
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(contenu));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
-        }
     }
 
     private Entreprise entrepriseCourante() {

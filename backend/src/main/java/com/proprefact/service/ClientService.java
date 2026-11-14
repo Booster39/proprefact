@@ -59,15 +59,11 @@ public class ClientService {
     private static Client remplir(Client client, ClientCommande commande) {
         client.setRaisonSociale(commande.raisonSociale());
         client.setSiren(commande.siren());
-        client.setTvaIntra(ouNull(commande.tvaIntra()));
+        client.setTvaIntra(Textes.ouNull(commande.tvaIntra()));
         client.setAdresse(commande.adresse());
         client.setCodePostal(commande.codePostal());
         client.setVille(commande.ville());
-        client.setEmail(ouNull(commande.email()));
+        client.setEmail(Textes.ouNull(commande.email()));
         return client;
-    }
-
-    private static String ouNull(String valeur) {
-        return valeur == null || valeur.isBlank() ? null : valeur.trim();
     }
 }

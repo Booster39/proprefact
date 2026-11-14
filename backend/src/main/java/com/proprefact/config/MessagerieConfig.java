@@ -1,5 +1,6 @@
 package com.proprefact.config;
 
+import com.proprefact.proprietes.ProprietesApp;
 import com.proprefact.service.Messagerie;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +24,8 @@ class MessagerieConfig {
     Messagerie messagerie(
             ObjectProvider<JavaMailSender> smtp,
             @Value("${spring.mail.host:}") String serveur,
-            @Value("${app.mail.expediteur}") String expediteur) {
+            ProprietesApp proprietes) {
+        String expediteur = proprietes.mail().expediteur();
         JavaMailSender expediteurSmtp = smtp.getIfAvailable();
         if (serveur.isBlank() || expediteurSmtp == null) {
             log.warn("Aucun serveur SMTP configuré (spring.mail.host) : les e-mails sont écrits dans le journal.");

@@ -1,10 +1,10 @@
 package com.proprefact.config;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import com.proprefact.proprietes.ProprietesApp;
 import java.nio.charset.StandardCharsets;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -35,7 +35,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecretKey jwtKey(@Value("${app.jwt.secret}") String secret) {
+    SecretKey jwtKey(ProprietesApp proprietes) {
+        String secret = proprietes.jwt().secret();
         byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
         if (bytes.length < 32) {
             throw new IllegalStateException("app.jwt.secret doit contenir au moins 32 octets");
