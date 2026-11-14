@@ -1,86 +1,68 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { Api } from '../api';
-import { messageErreur } from '../modeles';
-import { Session } from '../session';
+import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
+import { Api } from '../api/api';
+import { Session } from '../auth/session';
+import { RenvoiConfirmation } from './renvoi-confirmation';
 
 @Component({
-  imports: [FormsModule],
-  templateUrl: './connexion.html',
+  imports: [ReactiveFormsModule, RouterLink, RenvoiConfirmation],
+  template: `
+    <div class="carte etroite">
+      <h1>Connexion</h1>
+      <form [formGroup]="form" (ngSubmit)="connecter()">
+        <div class="grille">
+          <label>E-mail <input type="email" formControlName="email" autocomplete="email" /></label>
+          <label
+            >Mot de passe
+            <input type="password" formControlName="motDePasse" autocomplete="current-password"
+          /></label>
+        </div>
+        @if (enAttente()) {
+          <app-renvoi-confirmation [email]="enAttente()" />
+        }
+        <div class="actions">
+          <button type="submit" [disabled]="form.invalid || enCours()">Se connecter</button>
+          <a routerLink="/inscription">Créer un compte</a>
+        </div>
+      </form>
+    </div>
+  `,
 })
 export class Connexion {
   private readonly api = inject(Api);
   private readonly session = inject(Session);
   private readonly router = inject(Router);
+  private readonly fb = inject(NonNullableFormBuilder);
 
-  protected readonly inscription = signal(false);
-  /** Adresse à laquelle un lien de confirmation vient d'être envoyé. */
+  /** Adresse d'un compte dont le mot de passe est bon mais qui attend encore sa confirmation. */
   protected readonly enAttente = signal('');
-  protected readonly erreur = signal('');
-  protected readonly info = signal('');
   protected readonly enCours = signal(false);
-  protected readonly f = {
-    email: '',
-    motDePasse: '',
-    raisonSociale: '',
-    siren: '',
-    tvaIntra: '',
-    adresse: '',
-    codePostal: '',
-    ville: '',
-    iban: '',
-    bic: '',
-    optionTvaDebits: false,
-  };
 
-  protected valider(): void {
-    this.erreur.set('');
-    this.info.set('');
+  protected readonly form = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    motDePasse: ['', Validators.required],
+  });
+
+  protected connecter(): void {
+    if (this.form.invalid || this.enCours()) return;
+    const { email, motDePasse } = this.form.getRawValue();
     this.enCours.set(true);
-    if (this.inscription()) {
-      this.api.inscription(this.f).subscribe({
-        next: () => {
-          this.enAttente.set(this.f.email);
-          this.f.motDePasse = '';
-          this.inscription.set(false);
-          this.enCours.set(false);
-        },
-        error: (e) => this.echec(e),
-      });
-    } else {
-      this.api.connexion(this.f.email, this.f.motDePasse).subscribe({
-        next: (jeton) => {
-          this.session.ouvrir(jeton);
+    this.enAttente.set('');
+    this.api
+      .connexion(email, motDePasse)
+      .pipe(finalize(() => this.enCours.set(false)))
+      .subscribe({
+        next: (connexion) => {
+          this.session.ouvrir(connexion);
           this.router.navigateByUrl('/factures');
         },
-        error: (e) => {
-          // 403 : le mot de passe est bon mais l'adresse n'est pas confirmée.
-          if (e?.status === 403) this.enAttente.set(this.f.email);
-          this.echec(e);
+        // 403 : le mot de passe est bon mais l'adresse n'est pas confirmée.
+        error: (e: HttpErrorResponse) => {
+          if (e.status === 403) this.enAttente.set(email);
         },
       });
-    }
-  }
-
-  protected renvoyer(): void {
-    this.erreur.set('');
-    this.api.renvoyerConfirmation(this.enAttente()).subscribe({
-      next: () =>
-        this.info.set("Si un compte attend sa confirmation, un nouveau lien vient d'être envoyé."),
-      error: (e) => this.echec(e),
-    });
-  }
-
-  protected basculer(): void {
-    this.inscription.set(!this.inscription());
-    this.erreur.set('');
-    this.info.set('');
-    this.enAttente.set('');
-  }
-
-  private echec(e: unknown): void {
-    this.erreur.set(messageErreur(e));
-    this.enCours.set(false);
   }
 }

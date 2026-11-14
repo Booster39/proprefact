@@ -1,75 +1,59 @@
 <h1>Factures</h1>
-@if (erreur()) {
-  <p class="erreur" role="alert">{{ erreur() }}</p>
-}
 @if (message()) {
   <p class="info" role="status">{{ message() }}</p>
 }
 
 <div class="carte">
   <h2>Facturation mensuelle des contrats</h2>
-  <div class="actions" style="margin-top: 0">
-    <label>Mois à facturer <input type="month" name="mois" [(ngModel)]="mois" /></label>
-    <button (click)="generer()" [disabled]="!mois">Générer les brouillons</button>
-    <button class="secondaire" (click)="ponctuelle.set(!ponctuelle())">Facture ponctuelle</button>
+  <div class="actions sans-marge">
+    <label>Mois à facturer <input type="month" [formControl]="mois" /></label>
+    <button type="button" (click)="generer()" [disabled]="mois.invalid || enCours()">
+      Générer les brouillons
+    </button>
+    <button
+      type="button"
+      class="secondaire"
+      [attr.aria-expanded]="ponctuelle()"
+      (click)="ponctuelle.set(!ponctuelle())"
+    >
+      Facture ponctuelle
+    </button>
   </div>
 
   @if (ponctuelle()) {
-    <form #form="ngForm" (ngSubmit)="creerPonctuelle(form)" style="margin-top: 1rem">
+    <form class="espace-haut" [formGroup]="formPonctuelle" (ngSubmit)="creerPonctuelle()">
       <div class="grille">
         <label
           >Client
-          <select name="clientId" [(ngModel)]="clientId" required>
+          <select formControlName="clientId">
             <option [ngValue]="null" disabled>Choisir…</option>
-            @for (c of clients(); track c.id) {
-              <option [ngValue]="c.id">{{ c.raisonSociale }}</option>
+            @for (client of clients(); track client.id) {
+              <option [ngValue]="client.id">{{ client.raisonSociale }}</option>
             }
           </select>
         </label>
         <label
           >Désignation
-          <input
-            name="designation"
-            [(ngModel)]="ligne.designation"
-            required
-            placeholder="Remise en état après travaux"
+          <input formControlName="designation" placeholder="Remise en état après travaux"
         /></label>
         <label
-          >Quantité
-          <input
-            type="number"
-            name="quantite"
-            [(ngModel)]="ligne.quantite"
-            required
-            min="0.001"
-            step="any"
+          >Quantité <input type="number" formControlName="quantite" min="0.001" step="any"
         /></label>
         <label
           >Prix unitaire HT (€)
-          <input
-            type="number"
-            name="prixUnitaireHt"
-            [(ngModel)]="ligne.prixUnitaireHt"
-            required
-            min="0"
-            step="0.01"
+          <input type="number" formControlName="prixUnitaireHt" min="0" step="0.01"
         /></label>
         <label
-          >TVA (%)
-          <input
-            type="number"
-            name="tauxTva"
-            [(ngModel)]="ligne.tauxTva"
-            required
-            min="0"
-            step="0.1"
+          >TVA (%) <input type="number" formControlName="tauxTva" min="0" max="100" step="0.1"
         /></label>
       </div>
-      @if (form.invalid && form.touched) {
+      @if (formPonctuelle.invalid && formPonctuelle.touched) {
         <p class="info">Complétez les champs entourés en rouge pour continuer.</p>
       }
       <div class="actions">
-        <button type="submit" [disabled]="form.invalid">Créer le brouillon</button>
+        <button type="submit" [disabled]="formPonctuelle.invalid || enCours()">
+          Créer le brouillon
+        </button>
       </div>
     </form>
   }
@@ -82,53 +66,72 @@
     </p>
   } @else {
     <table>
+      <caption class="visuellement-cache">
+        Factures
+      </caption>
       <thead>
         <tr>
-          <th>Numéro</th>
-          <th>Client</th>
-          <th>Période</th>
-          <th>Émise le</th>
-          <th>Échéance</th>
-          <th class="nombre">HT</th>
-          <th class="nombre">TTC</th>
-          <th>Statut</th>
-          <th></th>
+          <th scope="col">Numéro</th>
+          <th scope="col">Client</th>
+          <th scope="col">Période</th>
+          <th scope="col">Émise le</th>
+          <th scope="col">Échéance</th>
+          <th scope="col" class="nombre">HT</th>
+          <th scope="col" class="nombre">TTC</th>
+          <th scope="col">Statut</th>
+          <th scope="col"><span class="visuellement-cache">Actions</span></th>
         </tr>
       </thead>
       <tbody>
-        @for (f of factures(); track f.id) {
+        @for (facture of factures(); track facture.id) {
           <tr>
-            <td>{{ f.numero ?? '—' }}</td>
-            <td>{{ f.client }}</td>
-            <td>{{ f.periode ?? '—' }}</td>
-            <td>{{ dateFr(f.dateEmission) }}</td>
-            <td>{{ dateFr(f.dateEcheance) }}</td>
-            <td class="nombre">{{ montant(f.totalHt) }}</td>
-            <td class="nombre">{{ montant(f.totalTtc) }}</td>
+            <td>{{ facture.numero ?? '—' }}</td>
+            <td>{{ facture.client }}</td>
+            <td>{{ facture.periode ?? '—' }}</td>
+            <td>{{ facture.dateEmission | dateFr }}</td>
+            <td>{{ facture.dateEcheance | dateFr }}</td>
+            <td class="nombre">{{ facture.totalHt | montant }}</td>
+            <td class="nombre">{{ facture.totalTtc | montant }}</td>
             <td>
-              <span class="etiquette {{ f.statut }}">{{ libelles[f.statut] }}</span>
-              @if (f.statut === 'DEPOT_EN_COURS' && f.depotErreur) {
-                <div class="erreur" style="font-size: 0.78rem; margin: 0.2rem 0 0">
-                  Dernier essai : {{ f.depotErreur }}
-                </div>
+              <span class="etiquette" [class]="classes[facture.statut]">{{
+                libelles[facture.statut]
+              }}</span>
+              @if (facture.statut === 'DEPOT_EN_COURS' && facture.depotErreur) {
+                <div class="erreur petite">Dernier essai : {{ facture.depotErreur }}</div>
               }
             </td>
             <td>
-              <span style="display: flex; gap: 0.3rem">
-                @if (f.statut === 'BROUILLON') {
-                  <button class="petit" (click)="action(f, 'valider')">Valider</button>
-                  <button class="secondaire petit" (click)="supprimer(f)">Supprimer</button>
-                } @else {
-                  <button class="secondaire petit" (click)="telecharger(f)">Factur-X</button>
+              <span class="groupe-boutons">
+                @if (facture.statut !== 'BROUILLON') {
+                  <button
+                    type="button"
+                    class="secondaire petit"
+                    [disabled]="enCours()"
+                    (click)="telecharger(facture)"
+                  >
+                    Factur-X
+                  </button>
                 }
-                @if (f.statut === 'VALIDEE') {
-                  <button class="petit" (click)="action(f, 'deposer')">Déposer</button>
+                @for (action of actions[facture.statut]; track action) {
+                  <button
+                    type="button"
+                    class="petit"
+                    [class.secondaire]="action === 'payee'"
+                    [disabled]="enCours()"
+                    (click)="agir(facture, action)"
+                  >
+                    {{ libelleAction(facture, action) }}
+                  </button>
                 }
-                @if (f.statut === 'DEPOT_EN_COURS') {
-                  <button class="petit" (click)="action(f, 'deposer')">Réessayer</button>
-                }
-                @if (f.statut === 'VALIDEE' || f.statut === 'DEPOSEE') {
-                  <button class="secondaire petit" (click)="action(f, 'payee')">Payée</button>
+                @if (facture.statut === 'BROUILLON') {
+                  <button
+                    type="button"
+                    class="secondaire petit"
+                    [disabled]="enCours()"
+                    (click)="supprimer(facture)"
+                  >
+                    Supprimer
+                  </button>
                 }
               </span>
             </td>

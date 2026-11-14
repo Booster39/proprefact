@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { Jeton } from './modeles';
+import { Jeton } from '../api/modeles';
 
 const CLE = 'proprefact.session';
 

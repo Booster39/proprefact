@@ -8,10 +8,13 @@
     </nav>
     <span class="compte">
       <span class="societe">{{ session.raisonSociale() }}</span>
-      <button class="secondaire petit" (click)="deconnexion()">Déconnexion</button>
+      <button type="button" class="secondaire petit" (click)="deconnexion()">Déconnexion</button>
     </span>
   }
 </header>
 <main>
+  @if (notifications.erreur()) {
+    <p class="erreur" role="alert">{{ notifications.erreur() }}</p>
+  }
   <router-outlet />
 </main>

@@ -28,8 +28,8 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 9 | Duplications, e-mail hors transaction, configuration | Fait | voir journal |
 | 10 | Découpage de `FacturXService` | Fait | voir journal |
 | 11 | Migration V5 et compteur | Fait | voir journal |
-| 12 | Front : découpage, typage, erreurs, double clic | À faire | |
-| 13 | Front : connexion, styles, accessibilité, tests | À faire | |
+| 12 | Front : découpage, typage, erreurs, double clic | Fait | voir journal |
+| 13 | Front : connexion, styles, accessibilité, tests | Fait | voir journal |
 | 14 | Projet : licences, README, divers | À faire | |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
@@ -43,8 +43,9 @@ Après le dernier lot terminé, ces commandes donnent :
 | `cd backend && ./mvnw -B verify` (Docker lancé) | 27 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
 | `cd frontend && npm run format:check` | `All matched files use Prettier code style!` |
 | `cd frontend && npm run lint` | `All files pass linting.` |
-| `cd frontend && npm test` | 3 fichiers, 5 tests réussis |
+| `cd frontend && npm test` | 6 fichiers, 16 tests réussis |
 | `cd frontend && npx ng build` | réussi |
+| parcours manuel dans le navigateur (voir ci-dessous) | 23 étapes réussies |
 
 Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherche d'abord pourquoi.
 
@@ -117,6 +118,33 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 - **Lot 11, nouvelle valeur de statut.** La contrainte `facture_statut_connu` liste les valeurs de
   `StatutFacture`. Ajouter une valeur à l'énumération exige une migration qui remplace la
   contrainte, sinon l'enregistrement échoue.
+- **Lots 12 et 13, un seul commit.** Les deux lots ont été faits ensemble (les mêmes gabarits
+  étaient réécrits) et sont dans un seul commit, contrairement à « un commit par étape ».
+- **Lot 12, formulaires réactifs.** L'étape 12.6 proposait de garder \`ngModel\` avec des signaux.
+  Les écrans utilisent à la place des **formulaires réactifs typés** (\`NonNullableFormBuilder\`,
+  \`formControlName\`) : la validation est dans le fichier \`.ts\`, l'objet envoyé est typé, et
+  \`form.reset()\` remet tout à zéro. Tout nouveau formulaire doit suivre ce modèle ; \`FormsModule\`
+  et \`ngModel\` ne sont plus utilisés nulle part.
+- **Lot 12, erreurs centralisées.** L'intercepteur (\`auth/intercepteur-jeton.ts\`) affiche toute
+  erreur du back-end par \`commun/notifications.ts\`, et le composant racine la montre en haut de la
+  page. Un écran n'écrit donc **pas** de \`error:\` dans ses \`subscribe\` : en cas d'échec sa requête
+  se termine sans résultat. Pour remettre un indicateur à zéro, utiliser \`finalize\`. Seuls
+  \`Api.connexion\` et \`Api.confirmer\` reçoivent l'erreur (jeton de contexte \`ERREUR_TRANSMISE\`),
+  parce que leur écran réagit à l'échec.
+- **Lot 12, défaut trouvé par le parcours navigateur.** Sans cette terminaison silencieuse, chaque
+  erreur HTTP apparaissait dans la console comme « ERROR HttpErrorResponse » non gérée. Les tests
+  unitaires ne le montraient pas : seul le parcours réel l'a révélé.
+- **Lot 13, écran d'inscription.** Après la création du compte, l'écran d'inscription affiche
+  lui-même le message « e-mail envoyé » et le bouton de renvoi (composant
+  \`pages/renvoi-confirmation.ts\`, partagé avec la connexion).
+- **Parcours manuel dans le navigateur.** À refaire après tout changement d'écran. Démarrer
+  \`docker compose up -d\`, le back-end en profil \`dev\`, puis \`npm start\` dans \`frontend/\`. Dérouler :
+  inscription avec un SIREN faux (bouton grisé, bordure rouge) puis juste ; connexion avant
+  confirmation (erreur + renvoi proposé) ; lien de confirmation lu dans le journal du back-end ;
+  2 clients avec un site chacun ; contrat (changer de client vide bien la liste des sites) ;
+  résiliation avec une date avant le début (refus affiché) ; génération du mois ; validation
+  (confirmation demandée) ; téléchargement du Factur-X ; dépôt ; paiement ; facture ponctuelle
+  créée puis supprimée. La console du navigateur ne doit montrer aucune erreur JavaScript.
 
 ## Journal
 
@@ -133,3 +161,5 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 | 2026-11-14 | 9 | `Empreinte` et `Textes` remplacent les copies ; les e-mails partent après validation de la transaction (`EmailAEnvoyer`, `EnvoiEmails`) ; réglages `app.*` regroupés et validés dans `proprietes/ProprietesApp` ; identifiants de base par défaut déplacés dans le profil `dev`. Démarrage réel vérifié en profil `dev` contre PostgreSQL (4 migrations appliquées, inscription 202, lien de confirmation dans le journal). |
 | 2026-11-14 | 10 | `FacturXService` éclaté dans `service/facturx/` : `FactureXml` (données Mustang), `FacturePdf` (mise en page), `Mentions`, et un `FacturXService` de 42 lignes ; variables renommées, coordonnées nommées, caractères invisibles remplacés par leurs codes, police absente signalée clairement, PDFBox et XMPBox déclarés ; test `FacturXServiceTest` (3 tests). Fichier produit comparé avant et après sur une facture à 3 taux : XML, texte et flux de dessin de la page identiques. |
 | 2026-11-14 | 11 | Migration `V5__index_et_contraintes.sql` (5 index, contrainte sur le statut, unicité de l'e-mail sans casse), appliquée sur PostgreSQL ; `CompteurFactureRepository.creerSiAbsent` avant le verrou ; test `desValidationsSimultaneesNumerotentSansDoublonNiTrou` (6 validations en parallèle), qui échoue avec l'ancien code (clé dupliquée, vérifié). |
+| 2026-11-14 | 12 | Front découpé en `auth/`, `api/`, `commun/`, `pages/` ; pipes `montant` et `dateFr` ; objets envoyés typés (plus aucun `object`) ; `ACTIONS_PAR_STATUT` et `CLASSE_STATUT` ; formulaires réactifs typés ; erreurs affichées par l'intercepteur ; protection contre le double clic (`enCours`) ; confirmation avant valider, payer, supprimer. |
+| 2026-11-14 | 13 | Écrans `connexion` et `inscription` séparés, titre par route, plus aucun style en ligne, tableaux avec légende et `scope`, boutons typés ; tests de l'intercepteur, de la garde et de l'écran des factures. Parcours complet rejoué dans un navigateur contre le vrai back-end : 23 étapes réussies. |

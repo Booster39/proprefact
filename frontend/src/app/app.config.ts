@@ -1,7 +1,7 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { intercepteurJeton } from './api';
+import { intercepteurJeton } from './auth/intercepteur-jeton';
 import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {

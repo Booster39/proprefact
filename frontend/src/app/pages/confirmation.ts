@@ -1,20 +1,18 @@
 import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Api } from '../api';
-import { messageErreur } from '../modeles';
-import { Session } from '../session';
+import { Api } from '../api/api';
+import { Session } from '../auth/session';
 
 /** Page ouverte depuis le lien reçu par e-mail : active le compte puis connecte l'utilisateur. */
 @Component({
   imports: [RouterLink],
   template: `
-    <div class="carte" style="max-width: 640px; margin: 2rem auto">
+    <div class="carte etroite">
       <h1>Confirmation de votre adresse</h1>
-      @if (erreur()) {
-        <p class="erreur" role="alert">{{ erreur() }}</p>
+      @if (echec()) {
         <p class="info">
-          Le lien a peut-être expiré ou déjà servi. Depuis la page de connexion, vous pouvez en
-          demander un nouveau.
+          Le lien est incomplet, a expiré ou a déjà servi. Depuis la page de connexion, vous pouvez
+          en demander un nouveau.
         </p>
         <a routerLink="/connexion">Aller à la connexion</a>
       } @else {
@@ -24,24 +22,25 @@ import { Session } from '../session';
   `,
 })
 export class Confirmation {
-  protected readonly erreur = signal('');
+  /** Le détail de l'erreur est affiché par le composant racine ; ici, seulement la marche à suivre. */
+  protected readonly echec = signal(false);
 
   constructor() {
     const session = inject(Session);
     const router = inject(Router);
     const jeton = inject(ActivatedRoute).snapshot.queryParamMap.get('jeton');
     if (!jeton) {
-      this.erreur.set('Lien de confirmation incomplet.');
+      this.echec.set(true);
       return;
     }
     inject(Api)
       .confirmer(jeton)
       .subscribe({
-        next: (j) => {
-          session.ouvrir(j);
+        next: (connexion) => {
+          session.ouvrir(connexion);
           router.navigateByUrl('/factures');
         },
-        error: (e) => this.erreur.set(messageErreur(e)),
+        error: () => this.echec.set(true),
       });
   }
 }

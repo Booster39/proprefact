@@ -1,87 +1,81 @@
 import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormsModule, NgForm } from '@angular/forms';
-import { Subject, catchError, of, switchMap } from 'rxjs';
-import { Api } from '../api';
-import { Client, Contrat, Site, dateFr, messageErreur, montant, aujourdhui } from '../modeles';
+import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { filter, finalize, switchMap, tap } from 'rxjs';
+import { Api } from '../api/api';
+import { Client, Contrat, Site } from '../api/modeles';
+import { DateFrPipe } from '../commun/date-fr.pipe';
+import { aujourdhui } from '../commun/formats';
+import { MontantPipe } from '../commun/montant.pipe';
 
 @Component({
-  imports: [FormsModule],
+  imports: [ReactiveFormsModule, MontantPipe, DateFrPipe],
   templateUrl: './contrats.html',
 })
 export class Contrats {
   private readonly api = inject(Api);
-  private readonly clientChoisi = new Subject<number>();
-  protected readonly montant = montant;
-  protected readonly dateFr = dateFr;
+  private readonly fb = inject(NonNullableFormBuilder);
 
   protected readonly contrats = signal<Contrat[]>([]);
   protected readonly clients = signal<Client[]>([]);
   protected readonly sites = signal<Site[]>([]);
-  protected readonly erreur = signal('');
-  protected clientId: number | null = null;
-  protected nouveau = this.vide();
+  protected readonly enCours = signal(false);
+
+  // clientId ne sert qu'à choisir le site : il n'est pas envoyé au back-end.
+  protected readonly form = this.fb.group({
+    clientId: this.fb.control<number | null>(null, Validators.required),
+    siteId: this.fb.control<number | null>(null, Validators.required),
+    libelle: ['', [Validators.required, Validators.maxLength(300)]],
+    montantMensuelHt: this.fb.control<number | null>(null, [
+      Validators.required,
+      Validators.min(0.01),
+    ]),
+    tauxTva: [20, [Validators.required, Validators.min(0), Validators.max(100)]],
+    dateDebut: [aujourdhui(), Validators.required],
+    dateFin: [''],
+  });
 
   constructor() {
-    const echec = (e: unknown) => this.erreur.set(messageErreur(e));
-    this.api.contrats().subscribe({ next: (c) => this.contrats.set(c), error: echec });
-    this.api.clients().subscribe({ next: (c) => this.clients.set(c), error: echec });
+    this.api.contrats().subscribe((contrats) => this.contrats.set(contrats));
+    this.api.clients().subscribe((clients) => this.clients.set(clients));
 
-    // switchMap abandonne la réponse d'un client précédent si l'utilisateur en a choisi un autre.
-    this.clientChoisi
+    this.form.controls.clientId.valueChanges
       .pipe(
-        switchMap((id) =>
-          this.api.sites(id).pipe(
-            // Dans le switchMap : une erreur ne doit pas arrêter les chargements suivants.
-            catchError((e) => {
-              this.erreur.set(messageErreur(e));
-              return of([] as Site[]);
-            }),
-          ),
-        ),
+        tap(() => {
+          this.sites.set([]);
+          this.form.controls.siteId.reset();
+        }),
+        filter((id) => id !== null),
+        // switchMap abandonne la réponse d'un client précédent si l'utilisateur en a choisi un autre.
+        switchMap((id) => this.api.sites(id)),
         takeUntilDestroyed(),
       )
       .subscribe((sites) => this.sites.set(sites));
   }
 
-  protected chargerSites(): void {
-    this.sites.set([]);
-    this.nouveau.siteId = null;
-    if (this.clientId !== null) {
-      this.clientChoisi.next(this.clientId);
-    }
+  protected creer(): void {
+    const { clientId, siteId, montantMensuelHt, dateFin, ...reste } = this.form.getRawValue();
+    if (this.form.invalid || siteId === null || montantMensuelHt === null || this.enCours()) return;
+    this.enCours.set(true);
+    this.api
+      .creerContrat({ ...reste, siteId, montantMensuelHt, dateFin: dateFin || null })
+      .pipe(finalize(() => this.enCours.set(false)))
+      .subscribe((contrat) => {
+        this.contrats.update((liste) => [...liste, contrat]);
+        // Le client et le site restent choisis pour enchaîner les contrats d'un même site.
+        // emitEvent: false, sinon le changement de client viderait la liste des sites.
+        this.form.reset({ clientId, siteId }, { emitEvent: false });
+      });
   }
 
-  protected creer(form: NgForm): void {
-    this.erreur.set('');
-    this.api.creerContrat({ ...this.nouveau, dateFin: this.nouveau.dateFin || null }).subscribe({
-      next: (c) => {
-        this.contrats.update((liste) => [...liste, c]);
-        const siteId = this.nouveau.siteId;
-        this.nouveau = { ...this.vide(), siteId };
-        form.resetForm({ ...this.nouveau, clientId: this.clientId });
-      },
-      error: (e) => this.erreur.set(messageErreur(e)),
-    });
-  }
-
-  protected resilier(c: Contrat, dateFin: string): void {
-    if (!dateFin) return;
-    this.erreur.set('');
-    this.api.resilier(c.id, dateFin).subscribe({
-      next: (maj) => this.contrats.update((liste) => liste.map((x) => (x.id === maj.id ? maj : x))),
-      error: (e) => this.erreur.set(messageErreur(e)),
-    });
-  }
-
-  private vide() {
-    return {
-      siteId: null as number | null,
-      libelle: '',
-      montantMensuelHt: null as number | null,
-      tauxTva: 20,
-      dateDebut: aujourdhui(),
-      dateFin: '',
-    };
+  protected resilier(contrat: Contrat, dateFin: string): void {
+    if (!dateFin || this.enCours()) return;
+    this.enCours.set(true);
+    this.api
+      .resilier(contrat.id, dateFin)
+      .pipe(finalize(() => this.enCours.set(false)))
+      .subscribe((resilie) =>
+        this.contrats.update((liste) => liste.map((c) => (c.id === resilie.id ? resilie : c))),
+      );
   }
 }

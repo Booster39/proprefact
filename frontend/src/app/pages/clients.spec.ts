@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Subject, of } from 'rxjs';
-import { Api } from '../api';
-import { Client, Site } from '../modeles';
+import { Api } from '../api/api';
+import { Client, Site } from '../api/modeles';
 import { Clients } from './clients';
 
 const client = (id: number, raisonSociale: string): Client => ({

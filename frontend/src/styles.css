@@ -149,26 +149,67 @@ td.large {
   font-size: 0.78rem;
   border: 1px solid var(--bord);
 }
-.etiquette.BROUILLON {
+.etiquette.statut-brouillon {
   color: var(--discret);
 }
-.etiquette.VALIDEE {
+.etiquette.statut-validee {
   color: #8a5a00;
   border-color: #e3c98f;
   background: #fff7e3;
 }
-.etiquette.DEPOT_EN_COURS {
+.etiquette.statut-depot-en-cours {
   color: #8a3b00;
   border-color: #efc19f;
   background: #fff1e6;
 }
-.etiquette.DEPOSEE {
+.etiquette.statut-deposee {
   color: #1d4f91;
   border-color: #b4cdee;
   background: #eef5ff;
 }
-.etiquette.PAYEE {
+.etiquette.statut-payee {
   color: #1b6b3a;
   border-color: #a9d8ba;
   background: #ebf8ef;
+}
+
+a {
+  color: var(--accent);
+}
+.actions a {
+  align-self: center;
+}
+
+/* Variantes de mise en page, pour ne pas écrire de style dans les gabarits. */
+.carte.etroite {
+  max-width: 640px;
+  margin: 2rem auto;
+}
+.espace-haut {
+  margin-top: 1rem;
+}
+.actions.sans-marge {
+  margin-top: 0;
+}
+.groupe-boutons {
+  display: flex;
+  gap: 0.3rem;
+}
+.erreur.petite {
+  font-size: 0.78rem;
+  margin: 0.2rem 0 0;
+}
+input.compact {
+  margin: 0;
+  padding: 0.2rem 0.3rem;
+  width: 9.5rem;
+}
+/* Lu par les lecteurs d'écran, invisible à l'écran. */
+.visuellement-cache {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

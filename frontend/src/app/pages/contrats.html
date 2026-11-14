@@ -2,75 +2,53 @@
 <p class="info">
   Chaque contrat est une prestation récurrente, facturée tous les mois pour un site.
 </p>
-@if (erreur()) {
-  <p class="erreur" role="alert">{{ erreur() }}</p>
-}
 
 <div class="carte">
   <h2>Nouveau contrat</h2>
   @if (clients().length === 0) {
     <p class="info">Créez d'abord un client et un site dans « Clients et sites ».</p>
   } @else {
-    <form #form="ngForm" (ngSubmit)="creer(form)">
+    <form [formGroup]="form" (ngSubmit)="creer()">
       <div class="grille">
         <label
           >Client
-          <select name="clientId" [(ngModel)]="clientId" (ngModelChange)="chargerSites()" required>
+          <select formControlName="clientId">
             <option [ngValue]="null" disabled>Choisir…</option>
-            @for (c of clients(); track c.id) {
-              <option [ngValue]="c.id">{{ c.raisonSociale }}</option>
+            @for (client of clients(); track client.id) {
+              <option [ngValue]="client.id">{{ client.raisonSociale }}</option>
             }
           </select>
         </label>
         <label
           >Site
-          <select name="siteId" [(ngModel)]="nouveau.siteId" required>
+          <select formControlName="siteId">
             <option [ngValue]="null" disabled>Choisir…</option>
-            @for (s of sites(); track s.id) {
-              <option [ngValue]="s.id">{{ s.nom }}</option>
+            @for (site of sites(); track site.id) {
+              <option [ngValue]="site.id">{{ site.nom }}</option>
             }
           </select>
         </label>
         <label
           >Prestation
           <input
-            name="libelle"
-            [(ngModel)]="nouveau.libelle"
-            required
+            formControlName="libelle"
             placeholder="Entretien des bureaux, 3 passages par semaine"
         /></label>
         <label
           >Montant mensuel HT (€)
-          <input
-            type="number"
-            name="montantMensuelHt"
-            [(ngModel)]="nouveau.montantMensuelHt"
-            required
-            min="0.01"
-            step="0.01"
+          <input type="number" formControlName="montantMensuelHt" min="0.01" step="0.01"
         /></label>
         <label
-          >TVA (%)
-          <input
-            type="number"
-            name="tauxTva"
-            [(ngModel)]="nouveau.tauxTva"
-            required
-            min="0"
-            step="0.1"
+          >TVA (%) <input type="number" formControlName="tauxTva" min="0" max="100" step="0.1"
         /></label>
-        <label
-          >Début <input type="date" name="dateDebut" [(ngModel)]="nouveau.dateDebut" required
-        /></label>
-        <label
-          >Fin (facultative) <input type="date" name="dateFin" [(ngModel)]="nouveau.dateFin"
-        /></label>
+        <label>Début <input type="date" formControlName="dateDebut" /></label>
+        <label>Fin (facultative) <input type="date" formControlName="dateFin" /></label>
       </div>
       @if (form.invalid && form.touched) {
         <p class="info">Complétez les champs entourés en rouge pour continuer.</p>
       }
       <div class="actions">
-        <button type="submit" [disabled]="form.invalid">Ajouter le contrat</button>
+        <button type="submit" [disabled]="form.invalid || enCours()">Ajouter le contrat</button>
       </div>
     </form>
   }
@@ -82,36 +60,44 @@
     <p class="info">Aucun contrat pour l'instant.</p>
   } @else {
     <table>
+      <caption class="visuellement-cache">
+        Contrats en portefeuille
+      </caption>
       <thead>
         <tr>
-          <th>Client</th>
-          <th>Site</th>
-          <th>Prestation</th>
-          <th class="nombre">Mensuel HT</th>
-          <th>Début</th>
-          <th>Fin</th>
-          <th></th>
+          <th scope="col">Client</th>
+          <th scope="col">Site</th>
+          <th scope="col">Prestation</th>
+          <th scope="col" class="nombre">Mensuel HT</th>
+          <th scope="col">Début</th>
+          <th scope="col">Fin</th>
+          <th scope="col"><span class="visuellement-cache">Actions</span></th>
         </tr>
       </thead>
       <tbody>
-        @for (c of contrats(); track c.id) {
+        @for (contrat of contrats(); track contrat.id) {
           <tr>
-            <td>{{ c.client }}</td>
-            <td>{{ c.site }}</td>
-            <td class="large">{{ c.libelle }}</td>
-            <td class="nombre">{{ montant(c.montantMensuelHt) }}</td>
-            <td>{{ dateFr(c.dateDebut) }}</td>
-            <td>{{ dateFr(c.dateFin) }}</td>
+            <td>{{ contrat.client }}</td>
+            <td>{{ contrat.site }}</td>
+            <td class="large">{{ contrat.libelle }}</td>
+            <td class="nombre">{{ contrat.montantMensuelHt | montant }}</td>
+            <td>{{ contrat.dateDebut | dateFr }}</td>
+            <td>{{ contrat.dateFin | dateFr }}</td>
             <td>
-              @if (!c.dateFin) {
-                <span style="display: flex; gap: 0.3rem">
+              @if (!contrat.dateFin) {
+                <span class="groupe-boutons">
                   <input
                     #fin
                     type="date"
-                    style="margin: 0; padding: 0.2rem 0.3rem; width: 9.5rem"
-                    [attr.aria-label]="'Date de fin du contrat ' + c.libelle"
+                    class="compact"
+                    [attr.aria-label]="'Date de fin du contrat ' + contrat.libelle"
                   />
-                  <button class="secondaire petit" (click)="resilier(c, fin.value)">
+                  <button
+                    type="button"
+                    class="secondaire petit"
+                    [disabled]="enCours()"
+                    (click)="resilier(contrat, fin.value)"
+                  >
                     Résilier
                   </button>
                 </span>

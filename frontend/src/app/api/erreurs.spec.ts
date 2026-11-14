@@ -1,4 +1,4 @@
-import { messageErreur } from './modeles';
+import { messageErreur } from './erreurs';
 
 describe('messageErreur', () => {
   it('reprend le détail renvoyé par le serveur', () => {

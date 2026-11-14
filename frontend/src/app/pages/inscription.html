@@ -1,0 +1,41 @@
+<div class="carte etroite">
+  <h1>Créer le compte de votre entreprise</h1>
+  @if (envoyeA()) {
+    <app-renvoi-confirmation [email]="envoyeA()" />
+    <a routerLink="/connexion">Aller à la connexion</a>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="inscrire()">
+      <div class="grille">
+        <label>E-mail <input type="email" formControlName="email" autocomplete="email" /></label>
+        <label
+          >Mot de passe (10 caractères minimum)
+          <input type="password" formControlName="motDePasse" autocomplete="new-password"
+        /></label>
+      </div>
+      <p class="info">Ces informations figureront sur vos factures.</p>
+      <div class="grille">
+        <label>Raison sociale <input formControlName="raisonSociale" /></label>
+        <label>SIREN (9 chiffres) <input formControlName="siren" inputmode="numeric" /></label>
+        <label>N° de TVA (vide si franchise en base) <input formControlName="tvaIntra" /></label>
+        <label>Adresse <input formControlName="adresse" /></label>
+        <label>Code postal <input formControlName="codePostal" /></label>
+        <label>Ville <input formControlName="ville" /></label>
+        <label>IBAN <input formControlName="iban" /></label>
+        <label>BIC <input formControlName="bic" /></label>
+      </div>
+      <p>
+        <label class="case">
+          <input type="checkbox" formControlName="optionTvaDebits" />
+          J'ai opté pour le paiement de la TVA d'après les débits
+        </label>
+      </p>
+      @if (form.invalid && form.touched) {
+        <p class="info">Complétez les champs entourés en rouge pour continuer.</p>
+      }
+      <div class="actions">
+        <button type="submit" [disabled]="form.invalid || enCours()">Créer le compte</button>
+        <a routerLink="/connexion">J'ai déjà un compte</a>
+      </div>
+    </form>
+  }
+</div>
