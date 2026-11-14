@@ -29,6 +29,8 @@ cd backend && ./mvnw verify
 cd frontend && npm run format:check && npm run lint && npm test
 ```
 
+Les tests d'intégration démarrent une base PostgreSQL jetable : Docker doit être lancé.
+
 Le test `ParcoursFacturationTest` déroule le parcours complet (inscription, clients, contrats,
 facturation mensuelle, validation, Factur-X) et vérifie le cloisonnement entre entreprises.
 
