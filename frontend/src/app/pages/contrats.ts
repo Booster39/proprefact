@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Api } from '../api';
-import { Client, Contrat, Site, dateFr, messageErreur, montant } from '../modeles';
+import { Client, Contrat, Site, dateFr, messageErreur, montant, aujourdhui } from '../modeles';
 
 @Component({
   imports: [FormsModule],
@@ -64,7 +64,7 @@ export class Contrats {
       libelle: '',
       montantMensuelHt: null as number | null,
       tauxTva: 20,
-      dateDebut: new Date().toISOString().slice(0, 10),
+      dateDebut: aujourdhui(),
       dateFin: '',
     };
   }

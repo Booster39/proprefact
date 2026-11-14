@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
@@ -38,6 +39,7 @@ public class AuthService {
     private final PasswordEncoder encodeur;
     private final JwtEncoder jwt;
     private final Messagerie messagerie;
+    private final Clock horloge;
     private final Duration duree;
     private final String urlPublique;
     private final SecureRandom alea = new SecureRandom();
@@ -51,12 +53,14 @@ public class AuthService {
             JwtEncoder jwt,
             Messagerie messagerie,
             @Value("${app.jwt.duree-heures}") long dureeHeures,
-            @Value("${app.url-publique}") String urlPublique) {
+            @Value("${app.url-publique}") String urlPublique,
+            Clock horloge) {
         this.entreprises = entreprises;
         this.utilisateurs = utilisateurs;
         this.encodeur = encodeur;
         this.jwt = jwt;
         this.messagerie = messagerie;
+        this.horloge = horloge;
         this.duree = Duration.ofHours(dureeHeures);
         this.urlPublique = urlPublique.replaceAll("/+$", "");
         this.hashFactice = encodeur.encode(jetonAleatoire());
@@ -117,7 +121,7 @@ public class AuthService {
         Utilisateur u = utilisateurs
                 .findByJetonConfirmationHash(sha256(jetonConfirmation))
                 .filter(x ->
-                        x.getJetonExpireLe() != null && x.getJetonExpireLe().isAfter(Instant.now()))
+                        x.getJetonExpireLe() != null && x.getJetonExpireLe().isAfter(horloge.instant()))
                 .orElseThrow(() ->
                         new ResponseStatusException(HttpStatus.BAD_REQUEST, "Lien de confirmation invalide ou expiré"));
         u.setEmailVerifie(true);
@@ -145,7 +149,7 @@ public class AuthService {
     private void envoyerConfirmation(Utilisateur u) {
         String jetonConfirmation = jetonAleatoire();
         u.setJetonConfirmationHash(sha256(jetonConfirmation));
-        u.setJetonExpireLe(Instant.now().plus(VALIDITE_CONFIRMATION));
+        u.setJetonExpireLe(horloge.instant().plus(VALIDITE_CONFIRMATION));
         messagerie.envoyer(u.getEmail(), "Confirmez votre adresse e-mail – ProPreFact", """
                 Bonjour,
 
@@ -158,7 +162,7 @@ public class AuthService {
     }
 
     private JetonDto jeton(Utilisateur u) {
-        Instant maintenant = Instant.now();
+        Instant maintenant = horloge.instant();
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .subject(u.getEmail())
                 .issuedAt(maintenant)

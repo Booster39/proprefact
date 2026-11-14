@@ -4,6 +4,7 @@ import com.proprefact.config.TenantResolver;
 import com.proprefact.domain.Facture;
 import com.proprefact.domain.StatutFacture;
 import jakarta.persistence.EntityManager;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -43,18 +44,21 @@ public class DepotService {
     private final PlateformeAgreee plateforme;
     private final TenantResolver tenant;
     private final EntityManager em;
+    private final Clock horloge;
 
     DepotService(
             PlatformTransactionManager gestionnaire,
             FacturationService facturation,
             PlateformeAgreee plateforme,
             TenantResolver tenant,
-            EntityManager em) {
+            EntityManager em,
+            Clock horloge) {
         this.transaction = new TransactionTemplate(gestionnaire);
         this.facturation = facturation;
         this.plateforme = plateforme;
         this.tenant = tenant;
         this.em = em;
+        this.horloge = horloge;
     }
 
     /**
@@ -72,7 +76,7 @@ public class DepotService {
                 throw new ResponseStatusException(
                         HttpStatus.CONFLICT, "Action impossible : la facture est au statut " + f.getStatut());
             }
-            f.setDepotProchaineTentative(Instant.now().plus(BAIL));
+            f.setDepotProchaineTentative(horloge.instant().plus(BAIL));
             return new Envoi(f.getCleDepot(), f.getNumero(), facturation.facturX(id));
         });
 
@@ -101,7 +105,7 @@ public class DepotService {
             } else {
                 f.setDepotTentatives(f.getDepotTentatives() + 1);
                 f.setDepotErreur(erreur.length() > 500 ? erreur.substring(0, 500) : erreur);
-                f.setDepotProchaineTentative(Instant.now().plus(delaiApres(f.getDepotTentatives())));
+                f.setDepotProchaineTentative(horloge.instant().plus(delaiApres(f.getDepotTentatives())));
             }
             return f;
         });

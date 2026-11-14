@@ -19,10 +19,10 @@ public class FactureDocument extends TenantEntity {
 
     protected FactureDocument() {}
 
-    public FactureDocument(Facture facture, byte[] contenu, String sha256) {
+    public FactureDocument(Facture facture, byte[] contenu, String sha256, Instant creeLe) {
         this.facture = facture;
         this.contenu = contenu;
         this.sha256 = sha256;
-        this.creeLe = Instant.now();
+        this.creeLe = creeLe;
     }
 }

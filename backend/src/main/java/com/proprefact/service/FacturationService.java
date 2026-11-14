@@ -20,6 +20,7 @@ import com.proprefact.web.Dtos.FactureReq;
 import java.math.BigDecimal;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.TextStyle;
@@ -49,6 +50,7 @@ public class FacturationService {
     private final TenantResolver tenant;
     private final FacturXService facturX;
     private final FactureDocumentRepository documents;
+    private final Clock horloge;
 
     FacturationService(
             FactureRepository factures,
@@ -59,7 +61,8 @@ public class FacturationService {
             EntrepriseRepository entreprises,
             TenantResolver tenant,
             FacturXService facturX,
-            FactureDocumentRepository documents) {
+            FactureDocumentRepository documents,
+            Clock horloge) {
         this.factures = factures;
         this.lignes = lignes;
         this.contrats = contrats;
@@ -69,6 +72,7 @@ public class FacturationService {
         this.tenant = tenant;
         this.facturX = facturX;
         this.documents = documents;
+        this.horloge = horloge;
     }
 
     /**
@@ -133,7 +137,7 @@ public class FacturationService {
     public Facture valider(Long id) {
         Facture f = charger(id);
         exiger(f, StatutFacture.BROUILLON);
-        LocalDate aujourdhui = LocalDate.now();
+        LocalDate aujourdhui = LocalDate.now(horloge);
         CompteurFacture compteur = compteurs.findByAnnee(aujourdhui.getYear()).orElseGet(() -> {
             CompteurFacture c = new CompteurFacture();
             c.setAnnee(aujourdhui.getYear());
@@ -187,7 +191,7 @@ public class FacturationService {
                 .map(FactureDocument::getContenu)
                 .orElseGet(() -> {
                     byte[] contenu = facturX.generer(f);
-                    documents.save(new FactureDocument(f, contenu, sha256(contenu)));
+                    documents.save(new FactureDocument(f, contenu, sha256(contenu), horloge.instant()));
                     return contenu;
                 });
     }

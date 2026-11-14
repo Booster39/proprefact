@@ -9,6 +9,7 @@ import {
   dateFr,
   messageErreur,
   montant,
+  aujourdhui,
 } from '../modeles';
 
 @Component({
@@ -26,7 +27,7 @@ export class Factures {
   protected readonly erreur = signal('');
   protected readonly message = signal('');
   protected readonly ponctuelle = signal(false);
-  protected mois = new Date().toISOString().slice(0, 7);
+  protected mois = aujourdhui().slice(0, 7);
   protected clientId: number | null = null;
   protected ligne: Ligne = this.ligneVide();
 

@@ -74,6 +74,13 @@ const euros = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR
 export const montant = (m: number) => euros.format(m);
 export const dateFr = (d: string | null) => (d ? d.split('-').reverse().join('/') : '—');
 
+/** Date du jour dans le fuseau du navigateur, au format AAAA-MM-JJ (toISOString donnerait la date UTC). */
+export function aujourdhui(): string {
+  const d = new Date();
+  const deuxChiffres = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${deuxChiffres(d.getMonth() + 1)}-${deuxChiffres(d.getDate())}`;
+}
+
 /** Nom affiché de chaque champ que le back-end peut signaler comme invalide. */
 const LIBELLES_CHAMP: Record<string, string> = {
   raisonSociale: 'Raison sociale',

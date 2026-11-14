@@ -19,10 +19,6 @@ public class LimiteurTentatives {
     private final ConcurrentHashMap<String, Compteur> compteurs = new ConcurrentHashMap<>();
     private final Clock horloge;
 
-    public LimiteurTentatives() {
-        this(Clock.systemUTC());
-    }
-
     LimiteurTentatives(Clock horloge) {
         this.horloge = horloge;
     }

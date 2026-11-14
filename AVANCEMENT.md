@@ -20,7 +20,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 1 | Outillage | Fait | voir journal |
 | 2 | Validation et erreurs lisibles (back) | Fait | voir journal |
 | 3 | Affichage des erreurs de validation (front) | Fait | voir journal |
-| 4 | Horloge injectable et dates locales | À faire | |
+| 4 | Horloge injectable et dates locales | Fait | voir journal |
 | 5 | Tests sur PostgreSQL et profil de test | Bloqué : pas de Docker dans l'environnement utilisé | |
 | 6 | Course entre requêtes (front) | À faire | |
 | 7 | Règles métier dans `Facture`, exceptions métier | À faire | |
@@ -82,3 +82,4 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 | 2026-11-14 | 1 | Maven Wrapper, Spotless (42 fichiers Java reformatés), Prettier (16 fichiers), ESLint, cible de tests Vitest avec 2 fichiers de tests, `.editorconfig`, `.gitattributes`, intégration continue GitHub, README. |
 | 2026-11-14 | 2 | Tailles et décimales validées sur tous les objets reçus, messages en français, `ErreursApi` renvoie une propriété `erreurs` par champ et ne laisse plus passer d'erreur 500 sur une contrainte de base, nouveau test `lesDonneesInvalidesSontRefuseesChampParChamp`. |
 | 2026-11-14 | 3 | `messageErreur` détaille les erreurs par champ avec leur libellé, bordure rouge sur les champs invalides touchés, phrase d'aide au-dessus des boutons d'envoi (clients, sites, contrats, facture ponctuelle, connexion), un test ajouté. |
+| 2026-11-14 | 4 | Bean `Clock` en Europe/Paris (`config/HorlogeConfig`) injecté dans `FacturationService`, `AuthService`, `DepotService`, `RelanceDepots` et `LimiteurTentatives` ; plus aucun `now()` sans horloge dans le code principal ; côté front, fonction `aujourdhui()` en heure locale. |
