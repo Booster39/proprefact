@@ -2,6 +2,7 @@ package com.proprefact.web;
 
 import com.proprefact.domain.IntrouvableException;
 import com.proprefact.domain.TransitionInterditeException;
+import com.proprefact.domain.ValeurRefuseeException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.core.Ordered;
@@ -48,6 +49,12 @@ class ErreursApi {
     @ExceptionHandler(IntrouvableException.class)
     ProblemDetail introuvable(IntrouvableException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
+    }
+
+    /** Règle métier refusée par le domaine sur une valeur saisie (par exemple une date de fin avant le début). */
+    @ExceptionHandler(ValeurRefuseeException.class)
+    ProblemDetail valeurRefusee(ValeurRefuseeException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
 
     /** Filet de sécurité : une contrainte de la base refusée ne doit jamais donner une erreur 500. */

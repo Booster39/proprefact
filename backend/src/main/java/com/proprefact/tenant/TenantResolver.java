@@ -1,4 +1,4 @@
-package com.proprefact.config;
+package com.proprefact.tenant;
 
 import java.util.Map;
 import org.hibernate.cfg.AvailableSettings;

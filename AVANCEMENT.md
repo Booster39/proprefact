@@ -24,7 +24,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 5 | Tests sur PostgreSQL et profil de test | Fait | voir journal |
 | 6 | Course entre requêtes (front) | Fait | voir journal |
 | 7 | Règles métier dans `Facture`, exceptions métier | Fait | voir journal |
-| 8 | Services clients et contrats, cycles entre paquets | À faire | |
+| 8 | Services clients et contrats, cycles entre paquets | Fait | voir journal |
 | 9 | Duplications, e-mail hors transaction, configuration | À faire | |
 | 10 | Découpage de `FacturXService` | À faire | |
 | 11 | Migration V5 et compteur | À faire | |
@@ -40,7 +40,7 @@ Après le dernier lot terminé, ces commandes donnent :
 
 | Commande | Résultat |
 |---|---|
-| `cd backend && ./mvnw -B verify` (Docker lancé) | 21 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
+| `cd backend && ./mvnw -B verify` (Docker lancé) | 23 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
 | `cd frontend && npm run format:check` | `All matched files use Prettier code style!` |
 | `cd frontend && npm run lint` | `All files pass linting.` |
 | `cd frontend && npm test` | 3 fichiers, 5 tests réussis |
@@ -81,6 +81,19 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
   premier appel : sans lui, valider deux fois consommerait un numéro pour rien.
 - **Lot 7, autres entités.** `Client`, `Site`, `Contrat`, `LigneFacture`, `Entreprise`,
   `Utilisateur` et `CompteurFacture` gardent `@Setter` : le lot ne visait que `Facture`.
+- **Lot 8, exception dédiée.** La règle « la date de fin précède la date de début » lance
+  `ValeurRefuseeException` (nouvelle, dans `domain`, traduite en 400) et non
+  `IllegalArgumentException` comme l'écrivait le lot : intercepter toutes les
+  `IllegalArgumentException` aurait renvoyé à l'utilisateur des messages techniques. Pour toute
+  nouvelle règle métier sur une valeur saisie, lance `ValeurRefuseeException`.
+- **Lot 8, objets gardés dans `web/Dtos.java`.** `ConfirmationReq` et `EmailReq` y restent : seul le
+  contrôleur les utilise, les services reçoivent une simple chaîne.
+- **Lot 8, `ouNull`.** `ClientService` a sa propre méthode privée `ouNull` ; `AuthService` a toujours
+  `vide`. Le lot 9 (étape 9.2) les réunit dans `Textes`.
+- **Règles de dépendances vérifiées par commande** (aucune ne doit rien afficher) :
+  `grep -rn "import com.proprefact.web" backend/src/main/java/com/proprefact/service backend/src/main/java/com/proprefact/domain` ;
+  `grep -rnE "import com.proprefact.repo|@Transactional" backend/src/main/java/com/proprefact/web` ;
+  `grep -rn "import com.proprefact\\.\\(service\\|web\\|repo\\|config\\|tenant\\)" backend/src/main/java/com/proprefact/domain`.
 
 ## Journal
 
@@ -93,3 +106,4 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 | 2026-11-14 | 5 | Tests d'intégration sur PostgreSQL 16 via Testcontainers (`BaseDeTest`), H2 retiré, profil `test` qui ne contient plus que trois écarts : la configuration de production est désormais réellement chargée par les tests. |
 | 2026-11-14 | 6 | `switchMap` sur le chargement des sites dans `Clients` et `Contrats` ; test `clients.spec.ts` qui reproduit la course (il échoue sans la correction, vérifié). |
 | 2026-11-14 | 7 | `Facture` n'a plus de setters : création par `Facture.brouillon`, transitions `valider`, `demanderDepot`, `enregistrerDepotReussi`, `enregistrerDepotEchoue`, `marquerPayee`, `exiger` ; `tvaParTaux()` sert aux totaux et au PDF ; exceptions `TransitionInterditeException` (409) et `IntrouvableException` (404) ; tests `FactureTest`, `ContratTest`, `DepotServiceTest`. |
+| 2026-11-14 | 8 | Objets reçus déplacés dans `service.commande` (`…Commande`, `JetonConnexion`, `Messages`) ; nouveaux `ClientService` et `ContratService` ; contrôleurs sans dépôt ni `@Transactional` ; `FichierFacture` ; `RelanceDepots` dans `service`, `TenantResolver` dans `tenant`, `@EnableScheduling` sur l'application ; règle de date de fin dans `Contrat.terminerLe` ; 2 tests ajoutés. |

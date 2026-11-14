@@ -1,6 +1,5 @@
 package com.proprefact.service;
 
-import com.proprefact.config.TenantResolver;
 import com.proprefact.domain.Client;
 import com.proprefact.domain.CompteurFacture;
 import com.proprefact.domain.Contrat;
@@ -18,7 +17,8 @@ import com.proprefact.repo.EntrepriseRepository;
 import com.proprefact.repo.FactureDocumentRepository;
 import com.proprefact.repo.FactureRepository;
 import com.proprefact.repo.LigneFactureRepository;
-import com.proprefact.web.Dtos.FactureReq;
+import com.proprefact.service.commande.FactureCommande;
+import com.proprefact.tenant.TenantResolver;
 import java.math.BigDecimal;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -108,7 +108,7 @@ public class FacturationService {
     }
 
     /** Facture ponctuelle (remise en état, vitrerie, intervention exceptionnelle...). */
-    public Facture creer(FactureReq req) {
+    public Facture creer(FactureCommande req) {
         Client client =
                 clients.findById(req.clientId()).orElseThrow(() -> new IntrouvableException("Client introuvable"));
         Facture f = Facture.brouillon(client, null);
@@ -121,6 +121,12 @@ public class FacturationService {
             f.ajouter(l);
         });
         return factures.save(f);
+    }
+
+    /** Toutes les factures, de la plus récente à la plus ancienne, avec leur client mais sans leurs lignes. */
+    @Transactional(readOnly = true)
+    public List<Facture> lister() {
+        return factures.findAllAvecClient();
     }
 
     @Transactional(readOnly = true)
@@ -161,12 +167,12 @@ public class FacturationService {
     }
 
     /** Le fichier émis à la validation, toujours le même octet pour octet. */
-    public byte[] facturX(Long id) {
+    public FichierFacture facturX(Long id) {
         Facture f = charger(id);
         if (f.getStatut() == StatutFacture.BROUILLON) {
             throw new TransitionInterditeException("La facture doit d'abord être validée");
         }
-        return document(f);
+        return new FichierFacture(f.getNumero(), document(f));
     }
 
     /**

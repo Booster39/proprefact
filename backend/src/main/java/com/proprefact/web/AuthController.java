@@ -2,11 +2,11 @@ package com.proprefact.web;
 
 import com.proprefact.service.AuthService;
 import com.proprefact.service.LimiteurTentatives;
+import com.proprefact.service.commande.ConnexionCommande;
+import com.proprefact.service.commande.InscriptionCommande;
+import com.proprefact.service.commande.JetonConnexion;
 import com.proprefact.web.Dtos.ConfirmationReq;
-import com.proprefact.web.Dtos.ConnexionReq;
 import com.proprefact.web.Dtos.EmailReq;
-import com.proprefact.web.Dtos.InscriptionReq;
-import com.proprefact.web.Dtos.JetonDto;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.time.Duration;
@@ -43,7 +43,7 @@ class AuthController {
     /** Répond toujours 202, que l'adresse soit nouvelle ou déjà inscrite. */
     @PostMapping("/inscription")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    void inscription(@Valid @RequestBody InscriptionReq req, HttpServletRequest http) {
+    void inscription(@Valid @RequestBody InscriptionCommande req, HttpServletRequest http) {
         limiterParIp(http);
         auth.inscrire(req);
     }
@@ -56,20 +56,20 @@ class AuthController {
     }
 
     @PostMapping("/confirmation")
-    JetonDto confirmation(@Valid @RequestBody ConfirmationReq req, HttpServletRequest http) {
+    JetonConnexion confirmation(@Valid @RequestBody ConfirmationReq req, HttpServletRequest http) {
         limiterParIp(http);
         return auth.confirmer(req.jeton());
     }
 
     @PostMapping("/connexion")
-    JetonDto connexion(@Valid @RequestBody ConnexionReq req, HttpServletRequest http) {
+    JetonConnexion connexion(@Valid @RequestBody ConnexionCommande req, HttpServletRequest http) {
         limiterParIp(http);
         String cleEchecs = "echecs:" + req.email().trim().toLowerCase();
         if (limiteur.atteinte(cleEchecs, maxEchecsParEmail, FENETRE)) {
             throw tropDeTentatives();
         }
         try {
-            JetonDto jeton = auth.connecter(req);
+            JetonConnexion jeton = auth.connecter(req);
             limiteur.oublier(cleEchecs);
             return jeton;
         } catch (ResponseStatusException e) {

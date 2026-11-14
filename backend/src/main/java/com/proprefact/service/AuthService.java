@@ -1,13 +1,13 @@
 package com.proprefact.service;
 
-import com.proprefact.config.TenantResolver;
 import com.proprefact.domain.Entreprise;
 import com.proprefact.domain.Utilisateur;
 import com.proprefact.repo.EntrepriseRepository;
 import com.proprefact.repo.UtilisateurRepository;
-import com.proprefact.web.Dtos.ConnexionReq;
-import com.proprefact.web.Dtos.InscriptionReq;
-import com.proprefact.web.Dtos.JetonDto;
+import com.proprefact.service.commande.ConnexionCommande;
+import com.proprefact.service.commande.InscriptionCommande;
+import com.proprefact.service.commande.JetonConnexion;
+import com.proprefact.tenant.TenantResolver;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -71,7 +71,7 @@ public class AuthService {
      * soit nouveau ou déjà inscrit : l'appelant ne peut pas en déduire quels comptes existent.
      */
     @Transactional
-    public void inscrire(InscriptionReq req) {
+    public void inscrire(InscriptionCommande req) {
         String email = req.email().trim().toLowerCase();
         String hash = encodeur.encode(req.motDePasse());
         Optional<Utilisateur> existant = utilisateurs.findByEmailIgnoreCase(email);
@@ -117,7 +117,7 @@ public class AuthService {
     }
 
     @Transactional
-    public JetonDto confirmer(String jetonConfirmation) {
+    public JetonConnexion confirmer(String jetonConfirmation) {
         Utilisateur u = utilisateurs
                 .findByJetonConfirmationHash(sha256(jetonConfirmation))
                 .filter(x ->
@@ -131,7 +131,7 @@ public class AuthService {
     }
 
     @Transactional(readOnly = true)
-    public JetonDto connecter(ConnexionReq req) {
+    public JetonConnexion connecter(ConnexionCommande req) {
         Optional<Utilisateur> trouve =
                 utilisateurs.findByEmailIgnoreCase(req.email().trim());
         boolean motDePasseCorrect = encodeur.matches(
@@ -161,7 +161,7 @@ public class AuthService {
                         urlPublique, jetonConfirmation));
     }
 
-    private JetonDto jeton(Utilisateur u) {
+    private JetonConnexion jeton(Utilisateur u) {
         Instant maintenant = horloge.instant();
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .subject(u.getEmail())
@@ -172,7 +172,7 @@ public class AuthService {
         String valeur = jwt.encode(JwtEncoderParameters.from(
                         JwsHeader.with(MacAlgorithm.HS256).build(), claims))
                 .getTokenValue();
-        return new JetonDto(valeur, u.getEntreprise().getRaisonSociale());
+        return new JetonConnexion(valeur, u.getEntreprise().getRaisonSociale());
     }
 
     private String jetonAleatoire() {

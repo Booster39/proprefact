@@ -23,6 +23,14 @@ public class Contrat extends TenantEntity {
     private LocalDate dateDebut;
     private LocalDate dateFin;
 
+    /** Fixe ou retire (null) la date de fin, qui ne peut pas précéder le début. */
+    public void terminerLe(LocalDate fin) {
+        if (fin != null && fin.isBefore(dateDebut)) {
+            throw new ValeurRefuseeException("La date de fin précède la date de début");
+        }
+        this.dateFin = fin;
+    }
+
     public boolean actifPendant(YearMonth mois) {
         return !dateDebut.isAfter(mois.atEndOfMonth()) && (dateFin == null || !dateFin.isBefore(mois.atDay(1)));
     }

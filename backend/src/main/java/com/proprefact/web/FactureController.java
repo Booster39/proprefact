@@ -1,11 +1,10 @@
 package com.proprefact.web;
 
-import com.proprefact.domain.Facture;
-import com.proprefact.repo.FactureRepository;
 import com.proprefact.service.DepotService;
 import com.proprefact.service.FacturationService;
+import com.proprefact.service.FichierFacture;
+import com.proprefact.service.commande.FactureCommande;
 import com.proprefact.web.Dtos.FactureDto;
-import com.proprefact.web.Dtos.FactureReq;
 import jakarta.validation.Valid;
 import java.time.YearMonth;
 import java.util.List;
@@ -15,7 +14,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,19 +28,16 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/factures")
 class FactureController {
     private final FacturationService facturation;
-    private final FactureRepository factures;
     private final DepotService depots;
 
-    FactureController(FacturationService facturation, FactureRepository factures, DepotService depots) {
+    FactureController(FacturationService facturation, DepotService depots) {
         this.facturation = facturation;
-        this.factures = factures;
         this.depots = depots;
     }
 
     @GetMapping
-    @Transactional(readOnly = true)
     List<FactureDto> lister() {
-        return factures.findAllAvecClient().stream().map(FactureDto::resume).toList();
+        return facturation.lister().stream().map(FactureDto::resume).toList();
     }
 
     @GetMapping("/{id}")
@@ -51,7 +46,7 @@ class FactureController {
     }
 
     @PostMapping
-    FactureDto creer(@Valid @RequestBody FactureReq req) {
+    FactureDto creer(@Valid @RequestBody FactureCommande req) {
         return FactureDto.complete(facturation.creer(req));
     }
 
@@ -86,16 +81,15 @@ class FactureController {
 
     @GetMapping("/{id}/facturx")
     ResponseEntity<byte[]> facturX(@PathVariable Long id) {
-        Facture f = facturation.charger(id);
-        byte[] pdf = facturation.facturX(id);
+        FichierFacture fichier = facturation.facturX(id);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(
                         HttpHeaders.CONTENT_DISPOSITION,
                         ContentDisposition.attachment()
-                                .filename(f.getNumero() + ".pdf")
+                                .filename(fichier.numero() + ".pdf")
                                 .build()
                                 .toString())
-                .body(pdf);
+                .body(fichier.contenu());
     }
 }

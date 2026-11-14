@@ -1,8 +1,8 @@
 package com.proprefact.service;
 
-import com.proprefact.config.TenantResolver;
 import com.proprefact.domain.Facture;
 import com.proprefact.domain.StatutFacture;
+import com.proprefact.tenant.TenantResolver;
 import jakarta.persistence.EntityManager;
 import java.time.Clock;
 import java.time.Duration;
@@ -68,7 +68,8 @@ public class DepotService {
             Facture f = facturation.charger(id);
             // La clé n'est retenue que pour un premier dépôt : une nouvelle tentative garde la sienne.
             f.demanderDepot(UUID.randomUUID().toString(), horloge.instant().plus(BAIL));
-            return new Envoi(f.getCleDepot(), f.getNumero(), facturation.facturX(id));
+            return new Envoi(
+                    f.getCleDepot(), f.getNumero(), facturation.facturX(id).contenu());
         });
 
         String idDepot = null;

@@ -1,15 +1,12 @@
-package com.proprefact.config;
+package com.proprefact.service;
 
-import com.proprefact.service.DepotService;
 import java.time.Clock;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 
 /** Retente chaque minute les dépôts restés en cours. Désactivable avec app.depot.relance-active=false. */
-@Configuration
-@EnableScheduling
+@Component
 @ConditionalOnProperty(name = "app.depot.relance-active", havingValue = "true", matchIfMissing = true)
 class RelanceDepots {
     private final DepotService depots;

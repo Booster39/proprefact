@@ -453,6 +453,38 @@ class ParcoursFacturationTest {
                 .andExpect(jsonPath("$.erreurs['lignes[0].prixUnitaireHt']").value("2 décimales au plus"));
     }
 
+    @Test
+    void unContratSeResilieMaisJamaisAvantSonDebut() throws Exception {
+        String jeton = inscrire("contrat@contrat.test", "818181818", "Propreté Contrat");
+        int client = id(envoyer(post("/api/clients"), jeton, """
+                {"raisonSociale":"Client","siren":"123456789","adresse":"a","codePostal":"75001","ville":"Paris"}"""));
+        int site = id(envoyer(post("/api/clients/" + client + "/sites"), jeton, """
+                {"nom":"Bureaux","adresse":"a","codePostal":"75001","ville":"Paris"}"""));
+        String corps = """
+                {"siteId":%d,"libelle":"Entretien","montantMensuelHt":100,"tauxTva":20,"dateDebut":"2026-03-15"%s}""";
+
+        mvc.perform(post("/api/contrats")
+                        .header("Authorization", "Bearer " + jeton)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corps.formatted(site, ",\"dateFin\":\"2026-03-01\"")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("La date de fin précède la date de début"));
+
+        String cree = envoyer(post("/api/contrats"), jeton, corps.formatted(site, ""));
+        assertThat(JsonPath.<String>read(cree, "$.site")).isEqualTo("Bureaux");
+        assertThat(JsonPath.<String>read(cree, "$.client")).isEqualTo("Client");
+        int contrat = id(cree);
+
+        mvc.perform(post("/api/contrats/" + contrat + "/resilier")
+                        .param("dateFin", "2026-03-01")
+                        .header("Authorization", "Bearer " + jeton))
+                .andExpect(status().isBadRequest());
+        String resilie =
+                envoyer(post("/api/contrats/" + contrat + "/resilier").param("dateFin", "2026-06-30"), jeton, null);
+        assertThat(JsonPath.<String>read(resilie, "$.dateFin")).isEqualTo("2026-06-30");
+        assertThat(JsonPath.<String>read(resilie, "$.client")).isEqualTo("Client");
+    }
+
     /** Inscription complète : création du compte puis confirmation par le lien reçu par e-mail. */
     private String inscrire(String email, String siren, String raisonSociale) throws Exception {
         demanderInscription(email, siren, raisonSociale, "mot-de-passe-solide");
