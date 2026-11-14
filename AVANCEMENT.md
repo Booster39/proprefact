@@ -22,7 +22,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 3 | Affichage des erreurs de validation (front) | Fait | voir journal |
 | 4 | Horloge injectable et dates locales | Fait | voir journal |
 | 5 | Tests sur PostgreSQL et profil de test | Fait | voir journal |
-| 6 | Course entre requêtes (front) | À faire | |
+| 6 | Course entre requêtes (front) | Fait | voir journal |
 | 7 | Règles métier dans `Facture`, exceptions métier | À faire | |
 | 8 | Services clients et contrats, cycles entre paquets | À faire | |
 | 9 | Duplications, e-mail hors transaction, configuration | À faire | |
@@ -43,7 +43,7 @@ Après le dernier lot terminé, ces commandes donnent :
 | `cd backend && ./mvnw -B verify` (Docker lancé) | 11 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
 | `cd frontend && npm run format:check` | `All matched files use Prettier code style!` |
 | `cd frontend && npm run lint` | `All files pass linting.` |
-| `cd frontend && npm test` | 2 fichiers, 4 tests réussis |
+| `cd frontend && npm test` | 3 fichiers, 5 tests réussis |
 | `cd frontend && npx ng build` | réussi |
 
 Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherche d'abord pourquoi.
@@ -70,6 +70,9 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
   fichier de `src/`, lance `./mvnw -B clean verify` (avec `clean`).
 - **Lot 5, résultat.** Les 11 tests passent sur PostgreSQL 16 sans aucune modification du code
   principal ni des migrations : H2 ne cachait pas de défaut.
+- **Lot 6, test ajouté.** Le lot ne demandait pas de test ; `pages/clients.spec.ts` en ajoute un. Il
+  sert de modèle pour tester un composant : `Api` remplacé par un objet simple, clics sur les
+  vrais boutons, puis `await fixture.whenStable()` avant de lire la page.
 
 ## Journal
 
@@ -80,3 +83,4 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 | 2026-11-14 | 3 | `messageErreur` détaille les erreurs par champ avec leur libellé, bordure rouge sur les champs invalides touchés, phrase d'aide au-dessus des boutons d'envoi (clients, sites, contrats, facture ponctuelle, connexion), un test ajouté. |
 | 2026-11-14 | 4 | Bean `Clock` en Europe/Paris (`config/HorlogeConfig`) injecté dans `FacturationService`, `AuthService`, `DepotService`, `RelanceDepots` et `LimiteurTentatives` ; plus aucun `now()` sans horloge dans le code principal ; côté front, fonction `aujourdhui()` en heure locale. |
 | 2026-11-14 | 5 | Tests d'intégration sur PostgreSQL 16 via Testcontainers (`BaseDeTest`), H2 retiré, profil `test` qui ne contient plus que trois écarts : la configuration de production est désormais réellement chargée par les tests. |
+| 2026-11-14 | 6 | `switchMap` sur le chargement des sites dans `Clients` et `Contrats` ; test `clients.spec.ts` qui reproduit la course (il échoue sans la correction, vérifié). |

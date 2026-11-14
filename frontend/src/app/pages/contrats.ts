@@ -1,5 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule, NgForm } from '@angular/forms';
+import { Subject, catchError, of, switchMap } from 'rxjs';
 import { Api } from '../api';
 import { Client, Contrat, Site, dateFr, messageErreur, montant, aujourdhui } from '../modeles';
 
@@ -9,6 +11,7 @@ import { Client, Contrat, Site, dateFr, messageErreur, montant, aujourdhui } fro
 })
 export class Contrats {
   private readonly api = inject(Api);
+  private readonly clientChoisi = new Subject<number>();
   protected readonly montant = montant;
   protected readonly dateFr = dateFr;
 
@@ -23,16 +26,29 @@ export class Contrats {
     const echec = (e: unknown) => this.erreur.set(messageErreur(e));
     this.api.contrats().subscribe({ next: (c) => this.contrats.set(c), error: echec });
     this.api.clients().subscribe({ next: (c) => this.clients.set(c), error: echec });
+
+    // switchMap abandonne la réponse d'un client précédent si l'utilisateur en a choisi un autre.
+    this.clientChoisi
+      .pipe(
+        switchMap((id) =>
+          this.api.sites(id).pipe(
+            // Dans le switchMap : une erreur ne doit pas arrêter les chargements suivants.
+            catchError((e) => {
+              this.erreur.set(messageErreur(e));
+              return of([] as Site[]);
+            }),
+          ),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe((sites) => this.sites.set(sites));
   }
 
   protected chargerSites(): void {
     this.sites.set([]);
     this.nouveau.siteId = null;
     if (this.clientId !== null) {
-      this.api.sites(this.clientId).subscribe({
-        next: (s) => this.sites.set(s),
-        error: (e) => this.erreur.set(messageErreur(e)),
-      });
+      this.clientChoisi.next(this.clientId);
     }
   }
 
