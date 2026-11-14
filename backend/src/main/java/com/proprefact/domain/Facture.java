@@ -19,13 +19,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import lombok.Getter;
-import lombok.Setter;
 import org.hibernate.annotations.EmbeddedColumnNaming;
 
 @Entity
 @Getter
-@Setter
 public class Facture extends TenantEntity {
+    /** Taille de la colonne facture.depot_erreur. */
+    static final int LONGUEUR_MAX_ERREUR = 500;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private Client client;
     /** Attribué à la validation, sans trou dans la séquence. */
@@ -73,8 +74,68 @@ public class Facture extends TenantEntity {
     @OrderBy("id")
     private List<LigneFacture> lignes = new ArrayList<>();
 
+    /** Réservé à JPA : une facture se crée avec {@link #brouillon}. */
+    protected Facture() {}
+
+    /** Nouveau brouillon ; la période (AAAA-MM) est nulle pour une facture ponctuelle. */
+    public static Facture brouillon(Client client, String periode) {
+        Facture facture = new Facture();
+        facture.client = client;
+        facture.periode = periode;
+        return facture;
+    }
+
+    /** Attribue le numéro définitif et fige la facture : elle ne dépend plus des fiches client et entreprise. */
+    public void valider(String numero, LocalDate jour, int delaiPaiementJours, Entreprise vendeur) {
+        exiger(StatutFacture.BROUILLON);
+        this.numero = numero;
+        this.dateEmission = jour;
+        this.dateEcheance = jour.plusDays(delaiPaiementJours);
+        recalculerTotaux();
+        figerParties(vendeur);
+        this.statut = StatutFacture.VALIDEE;
+    }
+
+    /** Enregistre l'intention de dépôt, ou prolonge le bail d'un dépôt déjà en cours. */
+    public void demanderDepot(String nouvelleCle, Instant finDuBail) {
+        if (statut == StatutFacture.VALIDEE) {
+            statut = StatutFacture.DEPOT_EN_COURS;
+            cleDepot = nouvelleCle;
+            depotTentatives = 0;
+        } else if (statut != StatutFacture.DEPOT_EN_COURS) {
+            throw new TransitionInterditeException("Action impossible : la facture est au statut " + statut);
+        }
+        depotProchaineTentative = finDuBail;
+    }
+
+    public void enregistrerDepotReussi(String idDepot) {
+        this.idDepot = idDepot;
+        this.statut = StatutFacture.DEPOSEE;
+        this.depotErreur = null;
+        this.depotProchaineTentative = null;
+    }
+
+    public void enregistrerDepotEchoue(String erreur, Instant prochaineTentative) {
+        this.depotTentatives++;
+        this.depotErreur = erreur.length() > LONGUEUR_MAX_ERREUR ? erreur.substring(0, LONGUEUR_MAX_ERREUR) : erreur;
+        this.depotProchaineTentative = prochaineTentative;
+    }
+
+    public void marquerPayee() {
+        if (statut != StatutFacture.VALIDEE && statut != StatutFacture.DEPOSEE) {
+            throw new TransitionInterditeException("Seule une facture validée peut être marquée payée");
+        }
+        statut = StatutFacture.PAYEE;
+    }
+
+    public void exiger(StatutFacture attendu) {
+        if (statut != attendu) {
+            throw new TransitionInterditeException("Action impossible : la facture est au statut " + statut);
+        }
+    }
+
     /** Recopie les coordonnées actuelles du vendeur et de l'acheteur : la facture n'en dépend plus ensuite. */
-    public void figerParties(Entreprise entreprise) {
+    private void figerParties(Entreprise entreprise) {
         vendeur = PartieFacture.de(entreprise);
         vendeurIban = entreprise.getIban();
         vendeurBic = entreprise.getBic();
@@ -97,15 +158,18 @@ public class Facture extends TenantEntity {
         return bases;
     }
 
-    public void recalculerTotaux() {
-        BigDecimal ht = BigDecimal.ZERO;
-        BigDecimal tva = BigDecimal.ZERO;
-        for (var e : basesParTaux().entrySet()) {
-            ht = ht.add(e.getValue());
-            tva = tva.add(e.getValue().multiply(e.getKey()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP));
-        }
-        totalHt = ht;
-        totalTva = tva;
-        totalTtc = ht.add(tva);
+    /** TVA par taux, arrondie par taux. Source unique pour les totaux et pour le PDF. */
+    public Map<BigDecimal, BigDecimal> tvaParTaux() {
+        Map<BigDecimal, BigDecimal> tva = new TreeMap<>();
+        basesParTaux()
+                .forEach((taux, base) ->
+                        tva.put(taux, base.multiply(taux).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP)));
+        return tva;
+    }
+
+    private void recalculerTotaux() {
+        totalHt = basesParTaux().values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        totalTva = tvaParTaux().values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
+        totalTtc = totalHt.add(totalTva);
     }
 }

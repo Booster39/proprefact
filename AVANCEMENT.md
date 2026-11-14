@@ -23,7 +23,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 4 | Horloge injectable et dates locales | Fait | voir journal |
 | 5 | Tests sur PostgreSQL et profil de test | Fait | voir journal |
 | 6 | Course entre requêtes (front) | Fait | voir journal |
-| 7 | Règles métier dans `Facture`, exceptions métier | À faire | |
+| 7 | Règles métier dans `Facture`, exceptions métier | Fait | voir journal |
 | 8 | Services clients et contrats, cycles entre paquets | À faire | |
 | 9 | Duplications, e-mail hors transaction, configuration | À faire | |
 | 10 | Découpage de `FacturXService` | À faire | |
@@ -40,7 +40,7 @@ Après le dernier lot terminé, ces commandes donnent :
 
 | Commande | Résultat |
 |---|---|
-| `cd backend && ./mvnw -B verify` (Docker lancé) | 11 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
+| `cd backend && ./mvnw -B verify` (Docker lancé) | 21 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
 | `cd frontend && npm run format:check` | `All matched files use Prettier code style!` |
 | `cd frontend && npm run lint` | `All files pass linting.` |
 | `cd frontend && npm test` | 3 fichiers, 5 tests réussis |
@@ -73,6 +73,14 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 - **Lot 6, test ajouté.** Le lot ne demandait pas de test ; `pages/clients.spec.ts` en ajoute un. Il
   sert de modèle pour tester un composant : `Api` remplacé par un objet simple, clics sur les
   vrais boutons, puis `await fixture.whenStable()` avant de lire la page.
+- **Lot 7, méthodes rendues privées.** `Facture.figerParties` et `Facture.recalculerTotaux` sont
+  maintenant `private` : plus aucun code extérieur ne les appelait. Pour modifier une facture
+  depuis un service, ajoute une méthode métier dans `Facture`, jamais un setter.
+- **Lot 7, ordre dans `valider`.** `FacturationService.valider` appelle `f.exiger(BROUILLON)`
+  **avant** de prendre un numéro au compteur, puis `f.valider(...)` le revérifie. Ne retire pas le
+  premier appel : sans lui, valider deux fois consommerait un numéro pour rien.
+- **Lot 7, autres entités.** `Client`, `Site`, `Contrat`, `LigneFacture`, `Entreprise`,
+  `Utilisateur` et `CompteurFacture` gardent `@Setter` : le lot ne visait que `Facture`.
 
 ## Journal
 
@@ -84,3 +92,4 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 | 2026-11-14 | 4 | Bean `Clock` en Europe/Paris (`config/HorlogeConfig`) injecté dans `FacturationService`, `AuthService`, `DepotService`, `RelanceDepots` et `LimiteurTentatives` ; plus aucun `now()` sans horloge dans le code principal ; côté front, fonction `aujourdhui()` en heure locale. |
 | 2026-11-14 | 5 | Tests d'intégration sur PostgreSQL 16 via Testcontainers (`BaseDeTest`), H2 retiré, profil `test` qui ne contient plus que trois écarts : la configuration de production est désormais réellement chargée par les tests. |
 | 2026-11-14 | 6 | `switchMap` sur le chargement des sites dans `Clients` et `Contrats` ; test `clients.spec.ts` qui reproduit la course (il échoue sans la correction, vérifié). |
+| 2026-11-14 | 7 | `Facture` n'a plus de setters : création par `Facture.brouillon`, transitions `valider`, `demanderDepot`, `enregistrerDepotReussi`, `enregistrerDepotEchoue`, `marquerPayee`, `exiger` ; `tvaParTaux()` sert aux totaux et au PDF ; exceptions `TransitionInterditeException` (409) et `IntrouvableException` (404) ; tests `FactureTest`, `ContratTest`, `DepotServiceTest`. |

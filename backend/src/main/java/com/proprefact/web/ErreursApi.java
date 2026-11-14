@@ -1,5 +1,7 @@
 package com.proprefact.web;
 
+import com.proprefact.domain.IntrouvableException;
+import com.proprefact.domain.TransitionInterditeException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.core.Ordered;
@@ -36,6 +38,16 @@ class ErreursApi {
                 HttpStatus.BAD_REQUEST, "Données invalides : vérifiez les champs signalés");
         probleme.setProperty("erreurs", erreurs);
         return probleme;
+    }
+
+    @ExceptionHandler(TransitionInterditeException.class)
+    ProblemDetail transitionInterdite(TransitionInterditeException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ExceptionHandler(IntrouvableException.class)
+    ProblemDetail introuvable(IntrouvableException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, exception.getMessage());
     }
 
     /** Filet de sécurité : une contrainte de la base refusée ne doit jamais donner une erreur 500. */

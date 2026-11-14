@@ -11,11 +11,9 @@ import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Dépôt des factures sur la plateforme agréée, en trois temps séparés :
@@ -68,15 +66,8 @@ public class DepotService {
     public Facture deposer(Long id) {
         Envoi envoi = transaction.execute(etat -> {
             Facture f = facturation.charger(id);
-            if (f.getStatut() == StatutFacture.VALIDEE) {
-                f.setStatut(StatutFacture.DEPOT_EN_COURS);
-                f.setCleDepot(UUID.randomUUID().toString());
-                f.setDepotTentatives(0);
-            } else if (f.getStatut() != StatutFacture.DEPOT_EN_COURS) {
-                throw new ResponseStatusException(
-                        HttpStatus.CONFLICT, "Action impossible : la facture est au statut " + f.getStatut());
-            }
-            f.setDepotProchaineTentative(horloge.instant().plus(BAIL));
+            // La clé n'est retenue que pour un premier dépôt : une nouvelle tentative garde la sienne.
+            f.demanderDepot(UUID.randomUUID().toString(), horloge.instant().plus(BAIL));
             return new Envoi(f.getCleDepot(), f.getNumero(), facturation.facturX(id));
         });
 
@@ -98,14 +89,10 @@ public class DepotService {
                 return f; // une autre tentative a déjà abouti
             }
             if (idDepot != null) {
-                f.setIdDepot(idDepot);
-                f.setStatut(StatutFacture.DEPOSEE);
-                f.setDepotErreur(null);
-                f.setDepotProchaineTentative(null);
+                f.enregistrerDepotReussi(idDepot);
             } else {
-                f.setDepotTentatives(f.getDepotTentatives() + 1);
-                f.setDepotErreur(erreur.length() > 500 ? erreur.substring(0, 500) : erreur);
-                f.setDepotProchaineTentative(horloge.instant().plus(delaiApres(f.getDepotTentatives())));
+                // + 1 : le délai se calcule sur le nombre d'échecs en comptant celui-ci.
+                f.enregistrerDepotEchoue(erreur, horloge.instant().plus(delaiApres(f.getDepotTentatives() + 1)));
             }
             return f;
         });

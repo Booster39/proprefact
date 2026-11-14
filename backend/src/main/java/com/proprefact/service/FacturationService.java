@@ -7,8 +7,10 @@ import com.proprefact.domain.Contrat;
 import com.proprefact.domain.Entreprise;
 import com.proprefact.domain.Facture;
 import com.proprefact.domain.FactureDocument;
+import com.proprefact.domain.IntrouvableException;
 import com.proprefact.domain.LigneFacture;
 import com.proprefact.domain.StatutFacture;
+import com.proprefact.domain.TransitionInterditeException;
 import com.proprefact.repo.ClientRepository;
 import com.proprefact.repo.CompteurFactureRepository;
 import com.proprefact.repo.ContratRepository;
@@ -31,10 +33,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @Transactional
@@ -88,12 +88,8 @@ public class FacturationService {
             if (!c.actifPendant(mois) || dejaFactures.contains(c.getId())) {
                 continue;
             }
-            Facture f = parClient.computeIfAbsent(c.getSite().getClient(), client -> {
-                Facture nouvelle = new Facture();
-                nouvelle.setClient(client);
-                nouvelle.setPeriode(periode);
-                return nouvelle;
-            });
+            Facture f =
+                    parClient.computeIfAbsent(c.getSite().getClient(), client -> Facture.brouillon(client, periode));
             LigneFacture l = new LigneFacture();
             l.setContrat(c);
             l.setPeriode(periode);
@@ -113,9 +109,9 @@ public class FacturationService {
 
     /** Facture ponctuelle (remise en état, vitrerie, intervention exceptionnelle...). */
     public Facture creer(FactureReq req) {
-        Facture f = new Facture();
-        f.setClient(clients.findById(req.clientId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Client introuvable")));
+        Client client =
+                clients.findById(req.clientId()).orElseThrow(() -> new IntrouvableException("Client introuvable"));
+        Facture f = Facture.brouillon(client, null);
         req.lignes().forEach(r -> {
             LigneFacture l = new LigneFacture();
             l.setDesignation(r.designation());
@@ -129,14 +125,13 @@ public class FacturationService {
 
     @Transactional(readOnly = true)
     public Facture charger(Long id) {
-        return factures.findComplete(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Facture introuvable"));
+        return factures.findComplete(id).orElseThrow(() -> new IntrouvableException("Facture introuvable"));
     }
 
     /** Attribue le numéro définitif et fige la facture. */
     public Facture valider(Long id) {
         Facture f = charger(id);
-        exiger(f, StatutFacture.BROUILLON);
+        f.exiger(StatutFacture.BROUILLON); // avant de consommer un numéro
         LocalDate aujourdhui = LocalDate.now(horloge);
         CompteurFacture compteur = compteurs.findByAnnee(aujourdhui.getYear()).orElseGet(() -> {
             CompteurFacture c = new CompteurFacture();
@@ -146,29 +141,22 @@ public class FacturationService {
         compteur.setDernierNumero(compteur.getDernierNumero() + 1);
         compteurs.save(compteur);
 
-        f.setNumero("F-%d-%05d".formatted(compteur.getAnnee(), compteur.getDernierNumero()));
-        f.setDateEmission(aujourdhui);
-        f.setDateEcheance(aujourdhui.plusDays(DELAI_PAIEMENT_JOURS));
-        f.recalculerTotaux();
-        f.figerParties(entrepriseCourante());
-        f.setStatut(StatutFacture.VALIDEE);
+        String numero = "F-%d-%05d".formatted(compteur.getAnnee(), compteur.getDernierNumero());
+        f.valider(numero, aujourdhui, DELAI_PAIEMENT_JOURS, entrepriseCourante());
         document(f);
         return f;
     }
 
     public Facture marquerPayee(Long id) {
         Facture f = charger(id);
-        if (f.getStatut() != StatutFacture.VALIDEE && f.getStatut() != StatutFacture.DEPOSEE) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Seule une facture validée peut être marquée payée");
-        }
-        f.setStatut(StatutFacture.PAYEE);
+        f.marquerPayee();
         return f;
     }
 
     /** Seul un brouillon peut être supprimé : une facture numérotée s'annule par un avoir. */
     public void supprimerBrouillon(Long id) {
         Facture f = charger(id);
-        exiger(f, StatutFacture.BROUILLON);
+        f.exiger(StatutFacture.BROUILLON);
         factures.delete(f);
     }
 
@@ -176,7 +164,7 @@ public class FacturationService {
     public byte[] facturX(Long id) {
         Facture f = charger(id);
         if (f.getStatut() == StatutFacture.BROUILLON) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "La facture doit d'abord être validée");
+            throw new TransitionInterditeException("La facture doit d'abord être validée");
         }
         return document(f);
     }
@@ -206,12 +194,5 @@ public class FacturationService {
 
     private Entreprise entrepriseCourante() {
         return entreprises.findById(tenant.resolveCurrentTenantIdentifier()).orElseThrow();
-    }
-
-    private static void exiger(Facture f, StatutFacture attendu) {
-        if (f.getStatut() != attendu) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT, "Action impossible : la facture est au statut " + f.getStatut());
-        }
     }
 }

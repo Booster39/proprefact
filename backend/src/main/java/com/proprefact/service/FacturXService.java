@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.ZoneId;
@@ -222,12 +221,10 @@ public class FacturXService {
         y -= 12;
         p.texteDroite("Total HT", 470, y, 9, false);
         p.texteDroite(montant(f.getTotalHt()), droite, y, 9, false);
-        for (var base : f.basesParTaux().entrySet()) {
+        for (var tva : f.tvaParTaux().entrySet()) {
             y -= 13;
-            BigDecimal tva =
-                    base.getValue().multiply(base.getKey()).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-            p.texteDroite("TVA " + base.getKey().toPlainString() + " %", 470, y, 9, false);
-            p.texteDroite(montant(tva), droite, y, 9, false);
+            p.texteDroite("TVA " + tva.getKey().toPlainString() + " %", 470, y, 9, false);
+            p.texteDroite(montant(tva.getValue()), droite, y, 9, false);
         }
         y -= 16;
         p.texteDroite("Total TTC", 470, y, 11, true);
