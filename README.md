@@ -35,8 +35,10 @@ cd frontend && npm run format:check && npm run lint && npm test
 
 Les tests d'intégration démarrent une base PostgreSQL jetable : Docker doit être lancé.
 
-Le test `ParcoursFacturationTest` déroule le parcours complet (inscription, clients, contrats,
-facturation mensuelle, validation, Factur-X) et vérifie le cloisonnement entre entreprises.
+Les tests d'intégration héritent de `TestIntegration` et sont rangés par sujet : `ComptesTest` (inscription,
+confirmation, connexion), `FacturationTest` (des contrats au Factur-X), `DepotTest` (plateforme agréée) et
+`CloisonnementTest` (séparation entre entreprises). Les tests unitaires du domaine utilisent les objets prêts à
+l'emploi de `domain/Exemples`.
 
 ## Organisation
 

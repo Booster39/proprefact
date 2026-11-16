@@ -35,6 +35,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 16 | Hors directives : plus aucun setter dans les entités | Fait | voir journal |
 | 17 | Hors directives : période typée `YearMonth` | Fait | voir journal |
 | 18 | Hors directives : conditions du vendeur regroupées | Fait | voir journal |
+| 19 | Hors directives : test d'intégration découpé par sujet | Fait | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -56,11 +57,9 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 
 ## Ce qui reste à faire
 
-Les 18 lots sont terminés. Ce qui suit n'a **pas** été fait ; chaque point
+Les 19 lots sont terminés. Ce qui suit n'a **pas** été fait ; chaque point
 est un travail à part, à décider avec le propriétaire du projet avant de le commencer.
 
-- **`ParcoursFacturationTest`.** Toujours un seul fichier (11 tests) avec ses classes de test
-  internes ; à découper par sujet (comptes, facturation, dépôt, cloisonnement).
 - **Capture d'écran du README.** `docs/ecran-factures.png` date d'avant la refonte des écrans.
 - **Déploiement.** Pas de Dockerfile ni de procédure de mise en production.
 - **Fonctions métier** listées dans le README, section « Reste à faire avant de vendre ».
@@ -192,12 +191,23 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
 - **Lot 17, période.** `Facture.periode` et `LigneFacture.periode` sont des `YearMonth`, enregistrés
   « AAAA-MM » par `domain/MoisConverter` (appliqué automatiquement, aussi aux paramètres de
   requête). Le schéma ne change pas. Le JSON garde la chaîne « 2026-11 » : `FactureDto` la convertit
-  explicitement, et `ParcoursFacturationTest` le vérifie.
+  explicitement, et `FacturationTest` le vérifie.
 - **Lot 18, conditions du vendeur.** `Facture.getConditionsVendeur()` (embeddable
   `ConditionsVendeur`) remplace `getVendeurIban()`, `getVendeurBic()` et
   `getVendeurOptionTvaDebits()`. Mêmes colonnes en base (`vendeur_iban`, `vendeur_bic`,
   `vendeur_option_tva_debits`), aucune migration. `isOptionTvaDebits()` renvoie `false` quand la
   colonne est vide. `FacturXServiceTest` vérifie désormais l'IBAN et le code de TVA dans le XML.
+- **Lot 19, tests d'intégration.** `ParcoursFacturationTest` n'existe plus. Ses 11 tests sont dans
+  `ComptesTest`, `FacturationTest`, `DepotTest` et `CloisonnementTest`, qui héritent de
+  `TestIntegration` (annotations, `mvc`, `courrier`, méthodes `inscrire`, `envoyer`, `id`…). Les
+  doubles `Courrier` et `PlateformeDeTest` sont des classes à part, déclarées par `DoublesDeTest`.
+  Toutes les classes partagent un seul contexte Spring et un seul conteneur PostgreSQL ; chacune
+  passe aussi lancée seule (vérifié). Un nouveau test d'intégration : `class XxxTest extends
+  TestIntegration`, sans annotation, et une entreprise propre au test (e-mail et SIREN uniques).
+- **Piège rencontré au lot 19.** Un script de découpage a échoué à mi-chemin, et la commande
+  suivante, enchaînée avec `;`, a supprimé le fichier d'origine : la vérification n'a alors compté
+  que 27 tests au lieu de 38. Rien n'a été commité. Règle : enchaîne avec `&&` toute commande qui
+  supprime quelque chose, et compare toujours le nombre de tests à celui du tableau ci-dessus.
 
 ## Journal
 
@@ -221,3 +231,4 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
 | 2026-11-16 | 16 | `@Setter` retiré de `Client`, `Site`, `Contrat`, `LigneFacture`, `Entreprise`, `Utilisateur`, `CompteurFacture` ; constructeurs et méthodes métier à la place ; `FicheClient`, `FicheEntreprise` ; règle d'architecture « aucun setter dans le domaine » ; `Exemples` et `UtilisateurTest`. |
 | 2026-11-16 | 17 | `periode` typée `YearMonth` avec `MoisConverter` ; plus aucun `YearMonth.parse` dans le code ; JSON inchangé et vérifié. |
 | 2026-11-16 | 18 | `ConditionsVendeur` regroupe IBAN, BIC et option pour les débits ; test du XML complété. |
+| 2026-11-16 | 19 | `ParcoursFacturationTest` découpé en `ComptesTest`, `FacturationTest`, `DepotTest`, `CloisonnementTest` sur une base `TestIntegration` ; même nombre de tests (38). |
