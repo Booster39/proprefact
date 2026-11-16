@@ -1,5 +1,7 @@
 package com.proprefact.web;
 
+import com.proprefact.domain.AdresseNonConfirmeeException;
+import com.proprefact.domain.IdentifiantsIncorrectsException;
 import com.proprefact.domain.IntrouvableException;
 import com.proprefact.domain.TransitionInterditeException;
 import com.proprefact.domain.ValeurRefuseeException;
@@ -55,6 +57,16 @@ class ErreursApi {
     @ExceptionHandler(ValeurRefuseeException.class)
     ProblemDetail valeurRefusee(ValeurRefuseeException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
+    }
+
+    @ExceptionHandler(IdentifiantsIncorrectsException.class)
+    ProblemDetail identifiantsIncorrects(IdentifiantsIncorrectsException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, exception.getMessage());
+    }
+
+    @ExceptionHandler(AdresseNonConfirmeeException.class)
+    ProblemDetail adresseNonConfirmee(AdresseNonConfirmeeException exception) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, exception.getMessage());
     }
 
     /** Filet de sécurité : une contrainte de la base refusée ne doit jamais donner une erreur 500. */

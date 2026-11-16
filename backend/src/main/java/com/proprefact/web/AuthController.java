@@ -1,5 +1,6 @@
 package com.proprefact.web;
 
+import com.proprefact.domain.IdentifiantsIncorrectsException;
 import com.proprefact.proprietes.ProprietesApp;
 import com.proprefact.service.AuthService;
 import com.proprefact.service.LimiteurTentatives;
@@ -69,10 +70,8 @@ class AuthController {
             JetonConnexion jeton = auth.connecter(req);
             limiteur.oublier(cleEchecs);
             return jeton;
-        } catch (ResponseStatusException e) {
-            if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                limiteur.tenter(cleEchecs, maxEchecsParEmail, FENETRE);
-            }
+        } catch (IdentifiantsIncorrectsException e) {
+            limiteur.tenter(cleEchecs, maxEchecsParEmail, FENETRE);
             throw e;
         }
     }

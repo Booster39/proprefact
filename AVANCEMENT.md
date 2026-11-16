@@ -31,6 +31,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 12 | Front : découpage, typage, erreurs, double clic | Fait | voir journal |
 | 13 | Front : connexion, styles, accessibilité, tests | Fait | voir journal |
 | 14 | Projet : licences, README, divers | Fait | voir journal |
+| 15 | Hors directives : règles d'architecture testées, garde-fous de build | Fait | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -40,7 +41,7 @@ Après le dernier lot terminé, ces commandes donnent :
 
 | Commande | Résultat |
 |---|---|
-| `cd backend && ./mvnw -B verify` (Docker lancé) | 27 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
+| `cd backend && ./mvnw -B verify` (Docker lancé) | 32 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
 | `cd frontend && npm run format:check` | `All matched files use Prettier code style!` |
 | `cd frontend && npm run lint` | `All files pass linting.` |
 | `cd frontend && npm test` | 6 fichiers, 16 tests réussis |
@@ -149,6 +150,16 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
   finit par échouer à l'inscription ou à la connexion : le back-end répond 429 « Trop de
   tentatives » (30 appels d'authentification par adresse IP et par quart d'heure). Ce n'est pas un
   défaut. Redémarrer le back-end remet les compteurs à zéro.
+- **Lot 15, ajouté après les directives.** Il traite ce que la revue signalait et que les 14 lots
+  ne couvraient pas : `ArchitectureTest` (ArchUnit) vérifie à chaque build les règles de
+  dépendances entre paquets ; `maven-enforcer` exige Java 21 et Maven 3.9 ; JaCoCo écrit le rapport
+  de couverture dans `backend/target/site/jacoco/index.html` (94 % des instructions au
+  2026-11-16). Le test a trouvé trois `ResponseStatusException` restantes dans `AuthService`,
+  remplacées par `IdentifiantsIncorrectsException` (401), `AdresseNonConfirmeeException` (403) et
+  `ValeurRefuseeException` (400), mêmes messages. Seul `AuthController` lance encore une
+  `ResponseStatusException` (429, limite de tentatives) : c'est permis, il est dans `web`.
+- **Si `ArchitectureTest` échoue**, ne modifie pas le test : déplace la classe fautive ou inverse
+  la dépendance. Le message d'échec nomme la classe et la ligne.
 
 ## Journal
 
@@ -168,3 +179,4 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 | 2026-11-14 | 12 | Front découpé en `auth/`, `api/`, `commun/`, `pages/` ; pipes `montant` et `dateFr` ; objets envoyés typés (plus aucun `object`) ; `ACTIONS_PAR_STATUT` et `CLASSE_STATUT` ; formulaires réactifs typés ; erreurs affichées par l'intercepteur ; protection contre le double clic (`enCours`) ; confirmation avant valider, payer, supprimer. |
 | 2026-11-14 | 13 | Écrans `connexion` et `inscription` séparés, titre par route, plus aucun style en ligne, tableaux avec légende et `scope`, boutons typés ; tests de l'intercepteur, de la garde et de l'écran des factures. Parcours complet rejoué dans un navigateur contre le vrai back-end : 23 étapes réussies. |
 | 2026-11-14 | 14 | Licence des polices DejaVu jointe (et présente dans le jar), README : capture d'écran, exemple de facture, organisation du front, section « Conventions » ; `.gitignore` complété ; paquet npm renommé `proprefact-frontend` 0.1.0. |
+| 2026-11-16 | 15 | `ArchitectureTest` (5 règles), exceptions métier dans `AuthService`, `maven-enforcer`, rapport de couverture JaCoCo. |

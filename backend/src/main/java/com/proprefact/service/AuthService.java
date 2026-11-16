@@ -1,7 +1,10 @@
 package com.proprefact.service;
 
+import com.proprefact.domain.AdresseNonConfirmeeException;
 import com.proprefact.domain.Entreprise;
+import com.proprefact.domain.IdentifiantsIncorrectsException;
 import com.proprefact.domain.Utilisateur;
+import com.proprefact.domain.ValeurRefuseeException;
 import com.proprefact.proprietes.ProprietesApp;
 import com.proprefact.repo.EntrepriseRepository;
 import com.proprefact.repo.UtilisateurRepository;
@@ -16,7 +19,6 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Optional;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
@@ -25,7 +27,6 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AuthService {
@@ -119,8 +120,7 @@ public class AuthService {
                 .findByJetonConfirmationHash(Empreinte.sha256(jetonConfirmation))
                 .filter(x ->
                         x.getJetonExpireLe() != null && x.getJetonExpireLe().isAfter(horloge.instant()))
-                .orElseThrow(() ->
-                        new ResponseStatusException(HttpStatus.BAD_REQUEST, "Lien de confirmation invalide ou expiré"));
+                .orElseThrow(() -> new ValeurRefuseeException("Lien de confirmation invalide ou expiré"));
         u.setEmailVerifie(true);
         u.setJetonConfirmationHash(null);
         u.setJetonExpireLe(null);
@@ -133,11 +133,10 @@ public class AuthService {
         boolean motDePasseCorrect = encodeur.matches(
                 req.motDePasse(), trouve.map(Utilisateur::getMotDePasseHash).orElse(hashFactice));
         if (trouve.isEmpty() || !motDePasseCorrect) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Identifiants incorrects");
+            throw new IdentifiantsIncorrectsException();
         }
         if (!trouve.get().isEmailVerifie()) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN, "Adresse e-mail non confirmée : cliquez sur le lien reçu par e-mail");
+            throw new AdresseNonConfirmeeException();
         }
         return jeton(trouve.get());
     }
