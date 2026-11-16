@@ -67,9 +67,9 @@ public class Facture extends TenantEntity {
     @EmbeddedColumnNaming("acheteur_%s")
     private PartieFacture acheteur;
 
-    private String vendeurIban;
-    private String vendeurBic;
-    private Boolean vendeurOptionTvaDebits;
+    @Embedded
+    @EmbeddedColumnNaming("vendeur_%s")
+    private ConditionsVendeur conditionsVendeur;
 
     @OneToMany(mappedBy = "facture", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id")
@@ -138,9 +138,7 @@ public class Facture extends TenantEntity {
     /** Recopie les coordonnées actuelles du vendeur et de l'acheteur : la facture n'en dépend plus ensuite. */
     private void figerParties(Entreprise entreprise) {
         vendeur = PartieFacture.de(entreprise);
-        vendeurIban = entreprise.getIban();
-        vendeurBic = entreprise.getBic();
-        vendeurOptionTvaDebits = entreprise.isOptionTvaDebits();
+        conditionsVendeur = ConditionsVendeur.de(entreprise);
         acheteur = PartieFacture.de(client);
     }
 

@@ -1,5 +1,6 @@
 package com.proprefact.service.facturx;
 
+import com.proprefact.domain.ConditionsVendeur;
 import com.proprefact.domain.Facture;
 import com.proprefact.domain.LigneFacture;
 import com.proprefact.domain.PartieFacture;
@@ -130,11 +131,12 @@ class FacturePdf {
 
         y -= 40;
         List<String> mentions = new ArrayList<>();
-        if (facture.getVendeurIban() != null) {
-            mentions.add("Règlement par virement – IBAN " + facture.getVendeurIban()
-                    + (facture.getVendeurBic() != null ? " – BIC " + facture.getVendeurBic() : ""));
+        ConditionsVendeur conditions = facture.getConditionsVendeur();
+        if (conditions.getIban() != null) {
+            mentions.add("Règlement par virement – IBAN " + conditions.getIban()
+                    + (conditions.getBic() != null ? " – BIC " + conditions.getBic() : ""));
         }
-        if (Boolean.TRUE.equals(facture.getVendeurOptionTvaDebits())) {
+        if (conditions.isOptionTvaDebits()) {
             mentions.add("Option pour le paiement de la taxe d'après les débits.");
         }
         mentions.addAll(List.of(Mentions.PENALITES, Mentions.INDEMNITE, Mentions.ESCOMPTE));

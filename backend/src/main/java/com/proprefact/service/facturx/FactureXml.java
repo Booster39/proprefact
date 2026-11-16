@@ -1,5 +1,6 @@
 package com.proprefact.service.facturx;
 
+import com.proprefact.domain.ConditionsVendeur;
 import com.proprefact.domain.Facture;
 import com.proprefact.domain.LigneFacture;
 import com.proprefact.domain.PartieFacture;
@@ -47,8 +48,9 @@ class FactureXml {
         if (vendeur.getTvaIntra() != null) {
             partieVendeur.addVATID(vendeur.getTvaIntra());
         }
-        if (facture.getVendeurIban() != null) {
-            partieVendeur.addBankDetails(new BankDetails(facture.getVendeurIban(), facture.getVendeurBic()));
+        ConditionsVendeur conditions = facture.getConditionsVendeur();
+        if (conditions.getIban() != null) {
+            partieVendeur.addBankDetails(new BankDetails(conditions.getIban(), conditions.getBic()));
         }
         TradeParty partieAcheteur = new TradeParty(
                         acheteur.getRaisonSociale(),
@@ -80,7 +82,7 @@ class FactureXml {
         }
         // Exigibilité de la TVA : 5 = à la facturation (option débits), 72 = à l'encaissement (régime des
         // services).
-        donnees.setVATDueDateTypeCode(Boolean.TRUE.equals(facture.getVendeurOptionTvaDebits()) ? "5" : "72");
+        donnees.setVATDueDateTypeCode(conditions.isOptionTvaDebits() ? "5" : "72");
         donnees.addNotes(List.of(
                 new IncludedNote(Mentions.PENALITES, SubjectCode.PMD),
                 new IncludedNote(Mentions.INDEMNITE, SubjectCode.PMT),

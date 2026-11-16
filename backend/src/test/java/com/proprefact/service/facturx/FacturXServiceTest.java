@@ -52,6 +52,14 @@ class FacturXServiceTest {
     }
 
     @Test
+    void leXmlPorteLeCompteDuVendeurEtSonRegimeDeTva() {
+        assertThat(xml)
+                .contains("<ram:IBANID>FR7630006000011234567890189</ram:IBANID>")
+                // 5 : TVA exigible à la facturation, parce que le vendeur a opté pour les débits.
+                .contains("<ram:DueDateTypeCode>5</ram:DueDateTypeCode>");
+    }
+
+    @Test
     void lePdfAfficheLesMemesMontantsQueLeXml() {
         assertThat(textePdf)
                 .contains("FACTURE F-2026-00042")

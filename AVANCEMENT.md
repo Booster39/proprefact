@@ -34,6 +34,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 15 | Hors directives : règles d'architecture testées, garde-fous de build | Fait | voir journal |
 | 16 | Hors directives : plus aucun setter dans les entités | Fait | voir journal |
 | 17 | Hors directives : période typée `YearMonth` | Fait | voir journal |
+| 18 | Hors directives : conditions du vendeur regroupées | Fait | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -43,7 +44,7 @@ Après le dernier lot terminé, ces commandes donnent :
 
 | Commande | Résultat |
 |---|---|
-| `cd backend && ./mvnw -B verify` (Docker lancé) | 37 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
+| `cd backend && ./mvnw -B verify` (Docker lancé) | 38 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
 | `cd frontend && npm run format:check` | `All matched files use Prettier code style!` |
 | `cd frontend && npm run lint` | `All files pass linting.` |
 | `cd frontend && npm test` | 6 fichiers, 16 tests réussis |
@@ -55,11 +56,9 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 
 ## Ce qui reste à faire
 
-Les 17 lots sont terminés. Ce qui suit n'a **pas** été fait ; chaque point
+Les 18 lots sont terminés. Ce qui suit n'a **pas** été fait ; chaque point
 est un travail à part, à décider avec le propriétaire du projet avant de le commencer.
 
-- **Coordonnées bancaires du vendeur.** `vendeurIban`, `vendeurBic` et `vendeurOptionTvaDebits` sont
-  des champs de `Facture` à côté de l'objet `vendeur`.
 - **`ParcoursFacturationTest`.** Toujours un seul fichier (11 tests) avec ses classes de test
   internes ; à découper par sujet (comptes, facturation, dépôt, cloisonnement).
 - **Capture d'écran du README.** `docs/ecran-factures.png` date d'avant la refonte des écrans.
@@ -194,6 +193,11 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
   « AAAA-MM » par `domain/MoisConverter` (appliqué automatiquement, aussi aux paramètres de
   requête). Le schéma ne change pas. Le JSON garde la chaîne « 2026-11 » : `FactureDto` la convertit
   explicitement, et `ParcoursFacturationTest` le vérifie.
+- **Lot 18, conditions du vendeur.** `Facture.getConditionsVendeur()` (embeddable
+  `ConditionsVendeur`) remplace `getVendeurIban()`, `getVendeurBic()` et
+  `getVendeurOptionTvaDebits()`. Mêmes colonnes en base (`vendeur_iban`, `vendeur_bic`,
+  `vendeur_option_tva_debits`), aucune migration. `isOptionTvaDebits()` renvoie `false` quand la
+  colonne est vide. `FacturXServiceTest` vérifie désormais l'IBAN et le code de TVA dans le XML.
 
 ## Journal
 
@@ -216,3 +220,4 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
 | 2026-11-16 | 15 | `ArchitectureTest` (5 règles), exceptions métier dans `AuthService`, `maven-enforcer`, rapport de couverture JaCoCo. |
 | 2026-11-16 | 16 | `@Setter` retiré de `Client`, `Site`, `Contrat`, `LigneFacture`, `Entreprise`, `Utilisateur`, `CompteurFacture` ; constructeurs et méthodes métier à la place ; `FicheClient`, `FicheEntreprise` ; règle d'architecture « aucun setter dans le domaine » ; `Exemples` et `UtilisateurTest`. |
 | 2026-11-16 | 17 | `periode` typée `YearMonth` avec `MoisConverter` ; plus aucun `YearMonth.parse` dans le code ; JSON inchangé et vérifié. |
+| 2026-11-16 | 18 | `ConditionsVendeur` regroupe IBAN, BIC et option pour les débits ; test du XML complété. |

@@ -49,7 +49,8 @@ class FactureTest {
         assertThat(facture.getDateEcheance()).isEqualTo(LocalDate.of(2026, 12, 14));
         assertThat(facture.getVendeur().getRaisonSociale()).isEqualTo("Net Plus SARL");
         assertThat(facture.getAcheteur().getRaisonSociale()).isEqualTo("Cabinet Durand");
-        assertThat(facture.getVendeurIban()).isEqualTo("FR7630006000011234567890189");
+        assertThat(facture.getConditionsVendeur().getIban()).isEqualTo("FR7630006000011234567890189");
+        assertThat(facture.getConditionsVendeur().isOptionTvaDebits()).isTrue();
     }
 
     @Test
