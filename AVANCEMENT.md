@@ -46,9 +46,27 @@ Après le dernier lot terminé, ces commandes donnent :
 | `cd frontend && npm run lint` | `All files pass linting.` |
 | `cd frontend && npm test` | 6 fichiers, 16 tests réussis |
 | `cd frontend && npx ng build` | réussi |
+| intégration continue GitHub sur `main` (commit `0f9be46`) | 2 tâches réussies (`backend`, `frontend`) |
 | parcours manuel dans le navigateur (voir ci-dessous) | 23 étapes réussies |
 
 Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherche d'abord pourquoi.
+
+## Ce qui reste à faire
+
+Les 15 lots sont terminés et fusionnés dans `main`. Ce qui suit n'a **pas** été fait ; chaque point
+est un travail à part, à décider avec le propriétaire du projet avant de le commencer.
+
+- **Setters des autres entités.** `Client`, `Site`, `Contrat`, `LigneFacture`, `Entreprise`,
+  `Utilisateur` et `CompteurFacture` portent encore `@Setter`. Seule `Facture` a été protégée.
+- **`periode` en `String`.** `Facture.periode` et `LigneFacture.periode` restent des chaînes
+  « AAAA-MM » reparsées dans `FactureXml` ; un `AttributeConverter<YearMonth, String>` les typerait.
+- **Coordonnées bancaires du vendeur.** `vendeurIban`, `vendeurBic` et `vendeurOptionTvaDebits` sont
+  des champs de `Facture` à côté de l'objet `vendeur`.
+- **`ParcoursFacturationTest`.** Toujours un seul fichier (11 tests) avec ses classes de test
+  internes ; à découper par sujet (comptes, facturation, dépôt, cloisonnement).
+- **Capture d'écran du README.** `docs/ecran-factures.png` date d'avant la refonte des écrans.
+- **Déploiement.** Pas de Dockerfile ni de procédure de mise en production.
+- **Fonctions métier** listées dans le README, section « Reste à faire avant de vendre ».
 
 ## Écarts et pièges rencontrés
 
