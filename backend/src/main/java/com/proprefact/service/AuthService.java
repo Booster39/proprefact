@@ -2,6 +2,7 @@ package com.proprefact.service;
 
 import com.proprefact.domain.AdresseNonConfirmeeException;
 import com.proprefact.domain.Entreprise;
+import com.proprefact.domain.FicheEntreprise;
 import com.proprefact.domain.IdentifiantsIncorrectsException;
 import com.proprefact.domain.Utilisateur;
 import com.proprefact.domain.ValeurRefuseeException;
@@ -85,23 +86,24 @@ public class AuthService {
             return;
         }
         // Une inscription jamais confirmée est remplacée : elle ne bloque pas l'adresse.
-        Utilisateur u = existant.orElseGet(Utilisateur::new);
-        Entreprise e = u.getEntreprise() != null ? u.getEntreprise() : new Entreprise();
-        e.setRaisonSociale(req.raisonSociale());
-        e.setSiren(req.siren());
-        e.setTvaIntra(Textes.ouNull(req.tvaIntra()));
-        e.setAdresse(req.adresse());
-        e.setCodePostal(req.codePostal());
-        e.setVille(req.ville());
-        e.setIban(Textes.ouNull(req.iban()));
-        e.setBic(Textes.ouNull(req.bic()));
-        e.setOptionTvaDebits(Boolean.TRUE.equals(req.optionTvaDebits()));
-        entreprises.save(e);
-
-        u.setEmail(email);
-        u.setMotDePasseHash(hash);
-        u.setEntreprise(e);
-        utilisateurs.save(u);
+        FicheEntreprise fiche = new FicheEntreprise(
+                req.raisonSociale(),
+                req.siren(),
+                Textes.ouNull(req.tvaIntra()),
+                req.adresse(),
+                req.codePostal(),
+                req.ville(),
+                Textes.ouNull(req.iban()),
+                Textes.ouNull(req.bic()),
+                Boolean.TRUE.equals(req.optionTvaDebits()));
+        Utilisateur u;
+        if (existant.isPresent()) {
+            u = existant.get();
+            u.getEntreprise().mettreAJour(fiche);
+            u.remplacerInscription(hash);
+        } else {
+            u = utilisateurs.save(new Utilisateur(email, hash, entreprises.save(new Entreprise(fiche))));
+        }
         envoyerConfirmation(u);
     }
 
@@ -118,12 +120,9 @@ public class AuthService {
     public JetonConnexion confirmer(String jetonConfirmation) {
         Utilisateur u = utilisateurs
                 .findByJetonConfirmationHash(Empreinte.sha256(jetonConfirmation))
-                .filter(x ->
-                        x.getJetonExpireLe() != null && x.getJetonExpireLe().isAfter(horloge.instant()))
+                .filter(x -> x.lienValableA(horloge.instant()))
                 .orElseThrow(() -> new ValeurRefuseeException("Lien de confirmation invalide ou expiré"));
-        u.setEmailVerifie(true);
-        u.setJetonConfirmationHash(null);
-        u.setJetonExpireLe(null);
+        u.confirmerEmail();
         return jeton(u);
     }
 
@@ -143,8 +142,8 @@ public class AuthService {
 
     private void envoyerConfirmation(Utilisateur u) {
         String jetonConfirmation = jetonAleatoire();
-        u.setJetonConfirmationHash(Empreinte.sha256(jetonConfirmation));
-        u.setJetonExpireLe(horloge.instant().plus(VALIDITE_CONFIRMATION));
+        u.attendreConfirmation(
+                Empreinte.sha256(jetonConfirmation), horloge.instant().plus(VALIDITE_CONFIRMATION));
         evenements.publishEvent(
                 new EmailAEnvoyer(u.getEmail(), "Confirmez votre adresse e-mail – ProPreFact", """
                 Bonjour,

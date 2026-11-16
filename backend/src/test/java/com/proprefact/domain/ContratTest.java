@@ -1,5 +1,6 @@
 package com.proprefact.domain;
 
+import static com.proprefact.domain.Exemples.contrat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -39,12 +40,5 @@ class ContratTest {
 
         contrat.terminerLe(LocalDate.of(2026, 3, 15));
         assertThat(contrat.getDateFin()).isEqualTo(LocalDate.of(2026, 3, 15));
-    }
-
-    private static Contrat contrat(LocalDate debut, LocalDate fin) {
-        Contrat contrat = new Contrat();
-        contrat.setDateDebut(debut);
-        contrat.setDateFin(fin);
-        return contrat;
     }
 }

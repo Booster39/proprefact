@@ -6,11 +6,10 @@ import jakarta.persistence.ManyToOne;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import lombok.Getter;
-import lombok.Setter;
 
+/** Ligne d'une facture. Elle ne change plus une fois créée ; elle rejoint sa facture par {@link Facture#ajouter}. */
 @Entity
 @Getter
-@Setter
 public class LigneFacture extends TenantEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private Facture facture;
@@ -23,6 +22,36 @@ public class LigneFacture extends TenantEntity {
     private BigDecimal quantite;
     private BigDecimal prixUnitaireHt;
     private BigDecimal tauxTva;
+
+    /** Réservé à JPA. */
+    protected LigneFacture() {}
+
+    private LigneFacture(String designation, BigDecimal quantite, BigDecimal prixUnitaireHt, BigDecimal tauxTva) {
+        this.designation = designation;
+        this.quantite = quantite;
+        this.prixUnitaireHt = prixUnitaireHt;
+        this.tauxTva = tauxTva;
+    }
+
+    /** Ligne saisie à la main (remise en état, vitrerie, intervention exceptionnelle...). */
+    public static LigneFacture ponctuelle(
+            String designation, BigDecimal quantite, BigDecimal prixUnitaireHt, BigDecimal tauxTva) {
+        return new LigneFacture(designation, quantite, prixUnitaireHt, tauxTva);
+    }
+
+    /** Mensualité d'un contrat pour une période (AAAA-MM) : une unité au montant et au taux du contrat. */
+    public static LigneFacture mensualite(Contrat contrat, String periode, String designation) {
+        LigneFacture ligne =
+                new LigneFacture(designation, BigDecimal.ONE, contrat.getMontantMensuelHt(), contrat.getTauxTva());
+        ligne.contrat = contrat;
+        ligne.periode = periode;
+        return ligne;
+    }
+
+    /** Appelé par {@link Facture#ajouter} uniquement. */
+    void rattacherA(Facture facture) {
+        this.facture = facture;
+    }
 
     public BigDecimal montantHt() {
         return quantite.multiply(prixUnitaireHt).setScale(2, RoundingMode.HALF_UP);

@@ -1,5 +1,8 @@
 package com.proprefact.domain;
 
+import static com.proprefact.domain.Exemples.brouillon;
+import static com.proprefact.domain.Exemples.ligne;
+import static com.proprefact.domain.Exemples.vendeur;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -104,37 +107,16 @@ class FactureTest {
         assertThat(facture.getDepotErreur()).hasSize(Facture.LONGUEUR_MAX_ERREUR);
     }
 
-    private static Facture brouillon(LigneFacture... lignes) {
-        Client client = new Client();
-        client.setRaisonSociale("Cabinet Durand");
-        client.setSiren("732829320");
-        client.setAdresse("12 rue de la Paix");
-        client.setCodePostal("69002");
-        client.setVille("Lyon");
-        Facture facture = Facture.brouillon(client, null);
-        for (LigneFacture ligne : lignes) {
-            facture.ajouter(ligne);
-        }
-        return facture;
-    }
+    @Test
+    void uneMensualiteReprendLeMontantEtLeTauxDuContrat() {
+        Contrat contrat = Exemples.contrat(LocalDate.of(2026, 1, 1), null);
 
-    private static LigneFacture ligne(String prixUnitaireHt, String tauxTva) {
-        LigneFacture ligne = new LigneFacture();
-        ligne.setDesignation("Prestation");
-        ligne.setQuantite(BigDecimal.ONE);
-        ligne.setPrixUnitaireHt(new BigDecimal(prixUnitaireHt));
-        ligne.setTauxTva(new BigDecimal(tauxTva));
-        return ligne;
-    }
+        LigneFacture mensualite = LigneFacture.mensualite(contrat, "2026-11", "Entretien – novembre 2026");
 
-    private static Entreprise vendeur() {
-        Entreprise entreprise = new Entreprise();
-        entreprise.setRaisonSociale("Net Plus SARL");
-        entreprise.setSiren("552100554");
-        entreprise.setAdresse("5 rue des Lilas");
-        entreprise.setCodePostal("69003");
-        entreprise.setVille("Lyon");
-        entreprise.setIban("FR7630006000011234567890189");
-        return entreprise;
+        assertThat(mensualite.getContrat()).isSameAs(contrat);
+        assertThat(mensualite.getPeriode()).isEqualTo("2026-11");
+        assertThat(mensualite.getQuantite()).isEqualByComparingTo("1");
+        assertThat(mensualite.montantHt()).isEqualByComparingTo("480.00");
+        assertThat(mensualite.getTauxTva()).isEqualByComparingTo("20");
     }
 }

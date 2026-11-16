@@ -32,6 +32,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 13 | Front : connexion, styles, accessibilité, tests | Fait | voir journal |
 | 14 | Projet : licences, README, divers | Fait | voir journal |
 | 15 | Hors directives : règles d'architecture testées, garde-fous de build | Fait | voir journal |
+| 16 | Hors directives : plus aucun setter dans les entités | Fait | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -41,7 +42,7 @@ Après le dernier lot terminé, ces commandes donnent :
 
 | Commande | Résultat |
 |---|---|
-| `cd backend && ./mvnw -B verify` (Docker lancé) | 32 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
+| `cd backend && ./mvnw -B verify` (Docker lancé) | 37 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
 | `cd frontend && npm run format:check` | `All matched files use Prettier code style!` |
 | `cd frontend && npm run lint` | `All files pass linting.` |
 | `cd frontend && npm test` | 6 fichiers, 16 tests réussis |
@@ -53,11 +54,9 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 
 ## Ce qui reste à faire
 
-Les 15 lots sont terminés et fusionnés dans `main`. Ce qui suit n'a **pas** été fait ; chaque point
+Les 16 lots sont terminés. Ce qui suit n'a **pas** été fait ; chaque point
 est un travail à part, à décider avec le propriétaire du projet avant de le commencer.
 
-- **Setters des autres entités.** `Client`, `Site`, `Contrat`, `LigneFacture`, `Entreprise`,
-  `Utilisateur` et `CompteurFacture` portent encore `@Setter`. Seule `Facture` a été protégée.
 - **`periode` en `String`.** `Facture.periode` et `LigneFacture.periode` restent des chaînes
   « AAAA-MM » reparsées dans `FactureXml` ; un `AttributeConverter<YearMonth, String>` les typerait.
 - **Coordonnées bancaires du vendeur.** `vendeurIban`, `vendeurBic` et `vendeurOptionTvaDebits` sont
@@ -178,6 +177,20 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
   `ResponseStatusException` (429, limite de tentatives) : c'est permis, il est dans `web`.
 - **Si `ArchitectureTest` échoue**, ne modifie pas le test : déplace la classe fautive ou inverse
   la dépendance. Le message d'échec nomme la classe et la ligne.
+- **Lot 16, entités sans setters.** Aucune entité n'a plus `@Setter`. Pour créer ou modifier :
+  `new Client(fiche)` et `client.mettreAJour(fiche)` avec un `FicheClient` ; de même `Entreprise`
+  avec `FicheEntreprise` ; `new Site(client, nom, adresse, codePostal, ville)` ;
+  `new Contrat(site, libelle, montant, taux, debut)` puis `terminerLe(fin)` ;
+  `LigneFacture.ponctuelle(...)` ou `LigneFacture.mensualite(contrat, periode, designation)` ;
+  `compteur.suivant()` ; `new Utilisateur(email, hash, entreprise)`, `remplacerInscription`,
+  `attendreConfirmation`, `lienValableA`, `confirmerEmail`. Une règle de `ArchitectureTest`
+  interdit toute méthode `set…` dans `domain` : pour un nouveau besoin, écrire une méthode métier.
+- **Lot 16, objets de test.** `backend/src/test/java/com/proprefact/domain/Exemples.java` fournit
+  un client, un vendeur, des lignes, un brouillon et un contrat prêts à l'emploi : s'en servir dans
+  tout nouveau test unitaire au lieu de reconstruire ces objets.
+- **Lot 16, `AuthService.inscrire`.** Le déroulement est inchangé (même ordre, mêmes réponses) ;
+  seule l'écriture change. Les tests d'inscription, de réinscription et de remplacement d'une
+  inscription non confirmée passent sans modification.
 
 ## Journal
 
@@ -198,3 +211,4 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
 | 2026-11-14 | 13 | Écrans `connexion` et `inscription` séparés, titre par route, plus aucun style en ligne, tableaux avec légende et `scope`, boutons typés ; tests de l'intercepteur, de la garde et de l'écran des factures. Parcours complet rejoué dans un navigateur contre le vrai back-end : 23 étapes réussies. |
 | 2026-11-14 | 14 | Licence des polices DejaVu jointe (et présente dans le jar), README : capture d'écran, exemple de facture, organisation du front, section « Conventions » ; `.gitignore` complété ; paquet npm renommé `proprefact-frontend` 0.1.0. |
 | 2026-11-16 | 15 | `ArchitectureTest` (5 règles), exceptions métier dans `AuthService`, `maven-enforcer`, rapport de couverture JaCoCo. |
+| 2026-11-16 | 16 | `@Setter` retiré de `Client`, `Site`, `Contrat`, `LigneFacture`, `Entreprise`, `Utilisateur`, `CompteurFacture` ; constructeurs et méthodes métier à la place ; `FicheClient`, `FicheEntreprise` ; règle d'architecture « aucun setter dans le domaine » ; `Exemples` et `UtilisateurTest`. |

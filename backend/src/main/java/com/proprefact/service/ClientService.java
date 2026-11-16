@@ -1,6 +1,7 @@
 package com.proprefact.service;
 
 import com.proprefact.domain.Client;
+import com.proprefact.domain.FicheClient;
 import com.proprefact.domain.IntrouvableException;
 import com.proprefact.domain.Site;
 import com.proprefact.repo.ClientRepository;
@@ -29,12 +30,14 @@ public class ClientService {
     }
 
     public Client creer(ClientCommande commande) {
-        return clients.save(remplir(new Client(), commande));
+        return clients.save(new Client(fiche(commande)));
     }
 
     /** Sans effet sur les factures déjà validées : elles gardent leur propre copie des coordonnées. */
     public Client modifier(Long id, ClientCommande commande) {
-        return remplir(trouver(id), commande);
+        Client client = trouver(id);
+        client.mettreAJour(fiche(commande));
+        return client;
     }
 
     @Transactional(readOnly = true)
@@ -43,27 +46,22 @@ public class ClientService {
     }
 
     public Site ajouterSite(Long clientId, SiteCommande commande) {
-        Site site = new Site();
-        site.setClient(trouver(clientId));
-        site.setNom(commande.nom());
-        site.setAdresse(commande.adresse());
-        site.setCodePostal(commande.codePostal());
-        site.setVille(commande.ville());
-        return sites.save(site);
+        return sites.save(new Site(
+                trouver(clientId), commande.nom(), commande.adresse(), commande.codePostal(), commande.ville()));
     }
 
     private Client trouver(Long id) {
         return clients.findById(id).orElseThrow(() -> new IntrouvableException("Client introuvable"));
     }
 
-    private static Client remplir(Client client, ClientCommande commande) {
-        client.setRaisonSociale(commande.raisonSociale());
-        client.setSiren(commande.siren());
-        client.setTvaIntra(Textes.ouNull(commande.tvaIntra()));
-        client.setAdresse(commande.adresse());
-        client.setCodePostal(commande.codePostal());
-        client.setVille(commande.ville());
-        client.setEmail(Textes.ouNull(commande.email()));
-        return client;
+    private static FicheClient fiche(ClientCommande commande) {
+        return new FicheClient(
+                commande.raisonSociale(),
+                commande.siren(),
+                Textes.ouNull(commande.tvaIntra()),
+                commande.adresse(),
+                commande.codePostal(),
+                commande.ville(),
+                Textes.ouNull(commande.email()));
     }
 }

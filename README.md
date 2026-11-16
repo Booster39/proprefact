@@ -62,7 +62,7 @@ facturation mensuelle, validation, Factur-X) et vérifie le cloisonnement entre 
   `config → service`. `service` n'importe jamais `web` ; `domain` n'importe aucun autre paquet du projet ;
   un contrôleur n'appelle jamais un dépôt et ne porte pas `@Transactional`.
 - **Règles métier.** Elles vivent dans les entités (`Facture.valider`, `Contrat.terminerLe`…), pas dans les
-  contrôleurs. `Facture` n'a pas de setters. Les services lancent des exceptions du paquet `domain`,
+  contrôleurs. Aucune entité n'a de setters. Les services lancent des exceptions du paquet `domain`,
   que `web/ErreursApi` traduit en réponses HTTP.
 - **Migrations.** Un fichier `V…sql` déjà fusionné ne se modifie jamais : tout changement de schéma est un
   nouveau fichier. Chaque contrainte porte un nom.

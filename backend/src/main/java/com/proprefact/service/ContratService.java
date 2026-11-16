@@ -31,12 +31,8 @@ public class ContratService {
 
     public Contrat creer(ContratCommande commande) {
         Site site = sites.findById(commande.siteId()).orElseThrow(() -> new IntrouvableException("Site introuvable"));
-        Contrat contrat = new Contrat();
-        contrat.setSite(site);
-        contrat.setLibelle(commande.libelle());
-        contrat.setMontantMensuelHt(commande.montantMensuelHt());
-        contrat.setTauxTva(commande.tauxTva());
-        contrat.setDateDebut(commande.dateDebut());
+        Contrat contrat = new Contrat(
+                site, commande.libelle(), commande.montantMensuelHt(), commande.tauxTva(), commande.dateDebut());
         contrat.terminerLe(commande.dateFin());
         return avecSiteEtClient(contrats.save(contrat));
     }

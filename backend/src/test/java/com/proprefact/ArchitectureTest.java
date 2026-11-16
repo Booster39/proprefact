@@ -1,6 +1,7 @@
 package com.proprefact;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noMethods;
 import static com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices;
 
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -50,6 +51,15 @@ class ArchitectureTest {
             .resideInAPackage("..repo..")
             .orShould()
             .beAnnotatedWith(Transactional.class);
+
+    /** Une entité se modifie par une méthode métier qui vérifie ses règles, jamais champ par champ. */
+    @ArchTest
+    static final ArchRule le_domaine_n_expose_aucun_setter = noMethods()
+            .that()
+            .areDeclaredInClassesThat()
+            .resideInAPackage("..domain..")
+            .should()
+            .haveNameMatching("set[A-Z].*");
 
     @ArchTest
     static final ArchRule aucun_cycle_entre_paquets =

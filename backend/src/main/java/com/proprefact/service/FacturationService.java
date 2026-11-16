@@ -20,7 +20,6 @@ import com.proprefact.repo.LigneFactureRepository;
 import com.proprefact.service.commande.FactureCommande;
 import com.proprefact.service.facturx.FacturXService;
 import com.proprefact.tenant.TenantResolver;
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -88,19 +87,13 @@ public class FacturationService {
             }
             Facture f =
                     parClient.computeIfAbsent(c.getSite().getClient(), client -> Facture.brouillon(client, periode));
-            LigneFacture l = new LigneFacture();
-            l.setContrat(c);
-            l.setPeriode(periode);
-            l.setDesignation("%s – %s – %s %d"
+            String designation = "%s – %s – %s %d"
                     .formatted(
                             c.getLibelle(),
                             c.getSite().getNom(),
                             mois.getMonth().getDisplayName(TextStyle.FULL, Locale.FRENCH),
-                            mois.getYear()));
-            l.setQuantite(BigDecimal.ONE);
-            l.setPrixUnitaireHt(c.getMontantMensuelHt());
-            l.setTauxTva(c.getTauxTva());
-            f.ajouter(l);
+                            mois.getYear());
+            f.ajouter(LigneFacture.mensualite(c, periode, designation));
         }
         return factures.saveAll(new ArrayList<>(parClient.values()));
     }
@@ -110,14 +103,9 @@ public class FacturationService {
         Client client =
                 clients.findById(req.clientId()).orElseThrow(() -> new IntrouvableException("Client introuvable"));
         Facture f = Facture.brouillon(client, null);
-        req.lignes().forEach(r -> {
-            LigneFacture l = new LigneFacture();
-            l.setDesignation(r.designation());
-            l.setQuantite(r.quantite());
-            l.setPrixUnitaireHt(r.prixUnitaireHt());
-            l.setTauxTva(r.tauxTva());
-            f.ajouter(l);
-        });
+        req.lignes()
+                .forEach(r -> f.ajouter(
+                        LigneFacture.ponctuelle(r.designation(), r.quantite(), r.prixUnitaireHt(), r.tauxTva())));
         return factures.save(f);
     }
 
@@ -139,9 +127,7 @@ public class FacturationService {
         LocalDate aujourdhui = LocalDate.now(horloge);
         compteurs.creerSiAbsent(tenant.resolveCurrentTenantIdentifier(), aujourdhui.getYear());
         CompteurFacture compteur = compteurs.findByAnnee(aujourdhui.getYear()).orElseThrow();
-        compteur.setDernierNumero(compteur.getDernierNumero() + 1);
-
-        String numero = "F-%d-%05d".formatted(compteur.getAnnee(), compteur.getDernierNumero());
+        String numero = "F-%d-%05d".formatted(compteur.getAnnee(), compteur.suivant());
         f.valider(numero, aujourdhui, DELAI_PAIEMENT_JOURS, entrepriseCourante());
         document(f);
         return f;

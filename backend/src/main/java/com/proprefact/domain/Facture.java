@@ -144,7 +144,7 @@ public class Facture extends TenantEntity {
     }
 
     public void ajouter(LigneFacture ligne) {
-        ligne.setFacture(this);
+        ligne.rattacherA(this);
         lignes.add(ligne);
         recalculerTotaux();
     }

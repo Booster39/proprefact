@@ -1,13 +1,12 @@
 package com.proprefact.service.facturx;
 
+import static com.proprefact.domain.Exemples.client;
+import static com.proprefact.domain.Exemples.ligne;
+import static com.proprefact.domain.Exemples.vendeur;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.proprefact.domain.Client;
-import com.proprefact.domain.Entreprise;
 import com.proprefact.domain.Facture;
-import com.proprefact.domain.LigneFacture;
 import java.io.ByteArrayInputStream;
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import org.apache.pdfbox.Loader;
@@ -71,39 +70,5 @@ class FacturXServiceTest {
                 .contains("IBAN FR7630006000011234567890189 – BIC AGRIFRPP")
                 .contains("Option pour le paiement de la taxe d'après les débits.")
                 .contains(Mentions.PENALITES, Mentions.INDEMNITE, Mentions.ESCOMPTE);
-    }
-
-    private static Client client() {
-        Client client = new Client();
-        client.setRaisonSociale("Cabinet Durand");
-        client.setSiren("732829320");
-        client.setTvaIntra("FR44732829320");
-        client.setAdresse("12 rue de la Paix");
-        client.setCodePostal("69002");
-        client.setVille("Lyon");
-        return client;
-    }
-
-    private static Entreprise vendeur() {
-        Entreprise entreprise = new Entreprise();
-        entreprise.setRaisonSociale("Net Plus SARL");
-        entreprise.setSiren("552100554");
-        entreprise.setTvaIntra("FR00552100554");
-        entreprise.setAdresse("5 rue des Lilas");
-        entreprise.setCodePostal("69003");
-        entreprise.setVille("Lyon");
-        entreprise.setIban("FR7630006000011234567890189");
-        entreprise.setBic("AGRIFRPP");
-        entreprise.setOptionTvaDebits(true);
-        return entreprise;
-    }
-
-    private static LigneFacture ligne(String designation, String quantite, String prixUnitaireHt, String tauxTva) {
-        LigneFacture ligne = new LigneFacture();
-        ligne.setDesignation(designation);
-        ligne.setQuantite(new BigDecimal(quantite));
-        ligne.setPrixUnitaireHt(new BigDecimal(prixUnitaireHt));
-        ligne.setTauxTva(new BigDecimal(tauxTva));
-        return ligne;
     }
 }

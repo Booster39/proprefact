@@ -5,12 +5,10 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.Getter;
-import lombok.Setter;
 
 /** L'entreprise de propreté abonnée au service (émettrice des factures). */
 @Entity
 @Getter
-@Setter
 public class Entreprise {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,4 +25,24 @@ public class Entreprise {
     private String bic;
     /** Option pour le paiement de la TVA d'après les débits (mention obligatoire si choisie). */
     private boolean optionTvaDebits;
+
+    /** Réservé à JPA. */
+    protected Entreprise() {}
+
+    public Entreprise(FicheEntreprise fiche) {
+        mettreAJour(fiche);
+    }
+
+    /** Sans effet sur les factures déjà validées : elles gardent leur propre copie des coordonnées. */
+    public void mettreAJour(FicheEntreprise fiche) {
+        this.raisonSociale = fiche.raisonSociale();
+        this.siren = fiche.siren();
+        this.tvaIntra = fiche.tvaIntra();
+        this.adresse = fiche.adresse();
+        this.codePostal = fiche.codePostal();
+        this.ville = fiche.ville();
+        this.iban = fiche.iban();
+        this.bic = fiche.bic();
+        this.optionTvaDebits = fiche.optionTvaDebits();
+    }
 }

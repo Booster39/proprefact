@@ -7,12 +7,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import lombok.Getter;
-import lombok.Setter;
 
 /** Prestation récurrente facturée chaque mois pour un site. */
 @Entity
 @Getter
-@Setter
 public class Contrat extends TenantEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     private Site site;
@@ -22,6 +20,18 @@ public class Contrat extends TenantEntity {
     private BigDecimal tauxTva;
     private LocalDate dateDebut;
     private LocalDate dateFin;
+
+    /** Réservé à JPA. */
+    protected Contrat() {}
+
+    /** Contrat sans date de fin ; elle se fixe ensuite avec {@link #terminerLe}. */
+    public Contrat(Site site, String libelle, BigDecimal montantMensuelHt, BigDecimal tauxTva, LocalDate dateDebut) {
+        this.site = site;
+        this.libelle = libelle;
+        this.montantMensuelHt = montantMensuelHt;
+        this.tauxTva = tauxTva;
+        this.dateDebut = dateDebut;
+    }
 
     /** Fixe ou retire (null) la date de fin, qui ne peut pas précéder le début. */
     public void terminerLe(LocalDate fin) {
