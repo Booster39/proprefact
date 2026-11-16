@@ -120,31 +120,35 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
   contrainte, sinon l'enregistrement échoue.
 - **Lots 12 et 13, un seul commit.** Les deux lots ont été faits ensemble (les mêmes gabarits
   étaient réécrits) et sont dans un seul commit, contrairement à « un commit par étape ».
-- **Lot 12, formulaires réactifs.** L'étape 12.6 proposait de garder \`ngModel\` avec des signaux.
-  Les écrans utilisent à la place des **formulaires réactifs typés** (\`NonNullableFormBuilder\`,
-  \`formControlName\`) : la validation est dans le fichier \`.ts\`, l'objet envoyé est typé, et
-  \`form.reset()\` remet tout à zéro. Tout nouveau formulaire doit suivre ce modèle ; \`FormsModule\`
-  et \`ngModel\` ne sont plus utilisés nulle part.
-- **Lot 12, erreurs centralisées.** L'intercepteur (\`auth/intercepteur-jeton.ts\`) affiche toute
-  erreur du back-end par \`commun/notifications.ts\`, et le composant racine la montre en haut de la
-  page. Un écran n'écrit donc **pas** de \`error:\` dans ses \`subscribe\` : en cas d'échec sa requête
-  se termine sans résultat. Pour remettre un indicateur à zéro, utiliser \`finalize\`. Seuls
-  \`Api.connexion\` et \`Api.confirmer\` reçoivent l'erreur (jeton de contexte \`ERREUR_TRANSMISE\`),
+- **Lot 12, formulaires réactifs.** L'étape 12.6 proposait de garder `ngModel` avec des signaux.
+  Les écrans utilisent à la place des **formulaires réactifs typés** (`NonNullableFormBuilder`,
+  `formControlName`) : la validation est dans le fichier `.ts`, l'objet envoyé est typé, et
+  `form.reset()` remet tout à zéro. Tout nouveau formulaire doit suivre ce modèle ; `FormsModule`
+  et `ngModel` ne sont plus utilisés nulle part.
+- **Lot 12, erreurs centralisées.** L'intercepteur (`auth/intercepteur-jeton.ts`) affiche toute
+  erreur du back-end par `commun/notifications.ts`, et le composant racine la montre en haut de la
+  page. Un écran n'écrit donc **pas** de `error:` dans ses `subscribe` : en cas d'échec sa requête
+  se termine sans résultat. Pour remettre un indicateur à zéro, utiliser `finalize`. Seuls
+  `Api.connexion` et `Api.confirmer` reçoivent l'erreur (jeton de contexte `ERREUR_TRANSMISE`),
   parce que leur écran réagit à l'échec.
 - **Lot 12, défaut trouvé par le parcours navigateur.** Sans cette terminaison silencieuse, chaque
   erreur HTTP apparaissait dans la console comme « ERROR HttpErrorResponse » non gérée. Les tests
   unitaires ne le montraient pas : seul le parcours réel l'a révélé.
 - **Lot 13, écran d'inscription.** Après la création du compte, l'écran d'inscription affiche
   lui-même le message « e-mail envoyé » et le bouton de renvoi (composant
-  \`pages/renvoi-confirmation.ts\`, partagé avec la connexion).
+  `pages/renvoi-confirmation.ts`, partagé avec la connexion).
 - **Parcours manuel dans le navigateur.** À refaire après tout changement d'écran. Démarrer
-  \`docker compose up -d\`, le back-end en profil \`dev\`, puis \`npm start\` dans \`frontend/\`. Dérouler :
+  `docker compose up -d`, le back-end en profil `dev`, puis `npm start` dans `frontend/`. Dérouler :
   inscription avec un SIREN faux (bouton grisé, bordure rouge) puis juste ; connexion avant
   confirmation (erreur + renvoi proposé) ; lien de confirmation lu dans le journal du back-end ;
   2 clients avec un site chacun ; contrat (changer de client vide bien la liste des sites) ;
   résiliation avec une date avant le début (refus affiché) ; génération du mois ; validation
   (confirmation demandée) ; téléchargement du Factur-X ; dépôt ; paiement ; facture ponctuelle
   créée puis supprimée. La console du navigateur ne doit montrer aucune erreur JavaScript.
+- **Parcours navigateur, limite de tentatives.** Rejoué de nombreuses fois de suite, le parcours
+  finit par échouer à l'inscription ou à la connexion : le back-end répond 429 « Trop de
+  tentatives » (30 appels d'authentification par adresse IP et par quart d'heure). Ce n'est pas un
+  défaut. Redémarrer le back-end remet les compteurs à zéro.
 
 ## Journal
 
