@@ -30,7 +30,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 11 | Migration V5 et compteur | Fait | voir journal |
 | 12 | Front : découpage, typage, erreurs, double clic | Fait | voir journal |
 | 13 | Front : connexion, styles, accessibilité, tests | Fait | voir journal |
-| 14 | Projet : licences, README, divers | À faire | |
+| 14 | Projet : licences, README, divers | Fait | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -167,3 +167,4 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 | 2026-11-14 | 11 | Migration `V5__index_et_contraintes.sql` (5 index, contrainte sur le statut, unicité de l'e-mail sans casse), appliquée sur PostgreSQL ; `CompteurFactureRepository.creerSiAbsent` avant le verrou ; test `desValidationsSimultaneesNumerotentSansDoublonNiTrou` (6 validations en parallèle), qui échoue avec l'ancien code (clé dupliquée, vérifié). |
 | 2026-11-14 | 12 | Front découpé en `auth/`, `api/`, `commun/`, `pages/` ; pipes `montant` et `dateFr` ; objets envoyés typés (plus aucun `object`) ; `ACTIONS_PAR_STATUT` et `CLASSE_STATUT` ; formulaires réactifs typés ; erreurs affichées par l'intercepteur ; protection contre le double clic (`enCours`) ; confirmation avant valider, payer, supprimer. |
 | 2026-11-14 | 13 | Écrans `connexion` et `inscription` séparés, titre par route, plus aucun style en ligne, tableaux avec légende et `scope`, boutons typés ; tests de l'intercepteur, de la garde et de l'écran des factures. Parcours complet rejoué dans un navigateur contre le vrai back-end : 23 étapes réussies. |
+| 2026-11-14 | 14 | Licence des polices DejaVu jointe (et présente dans le jar), README : capture d'écran, exemple de facture, organisation du front, section « Conventions » ; `.gitignore` complété ; paquet npm renommé `proprefact-frontend` 0.1.0. |

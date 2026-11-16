@@ -5,3 +5,6 @@ frontend/.angular/
 .idea/
 .vscode/
 *.iml
+.env
+*.log
+.DS_Store

@@ -3,6 +3,10 @@
 Facturation récurrente pour les entreprises de propreté, avec factures au format Factur-X
 (facturation électronique obligatoire en France).
 
+![Écran des factures](docs/ecran-factures.png)
+
+Exemple de facture produite : [docs/exemple-facture-facturx.pdf](docs/exemple-facture-facturx.pdf).
+
 ## Démarrer en développement
 
 Prérequis : Java 21, Node 22, Docker.
@@ -38,7 +42,8 @@ facturation mensuelle, validation, Factur-X) et vérifie le cloisonnement entre 
 
 - `backend/` : Spring Boot 4, PostgreSQL, Flyway. Une seule base pour toutes les entreprises ;
   chaque ligne porte un `entreprise_id` que Hibernate filtre automatiquement (`TenantResolver`, `@TenantId`).
-- `frontend/` : Angular 22.
+- `frontend/` : Angular 22. `auth/` (session, intercepteur, garde), `api/` (appels HTTP, types, messages d'erreur),
+  `commun/` (pipes, notifications), `pages/` (un écran par fichier).
 - `backend/src/main/java/com/proprefact/service/facturx/` : Factur-X, c'est-à-dire un PDF/A-3 lisible (`FacturePdf`)
   qui embarque le XML EN 16931 (`FactureXml`, bibliothèque Mustang).
 - Une facture validée est figée : elle garde sa copie des coordonnées vendeur et acheteur, et le fichier
@@ -47,6 +52,29 @@ facturation mensuelle, validation, Factur-X) et vérifie le cloisonnement entre 
   appel hors transaction, résultat enregistré), rejoué chaque minute avec la même clé d'idempotence tant qu'il échoue.
 - `backend/src/main/java/com/proprefact/service/PlateformeAgreee.java` : point d'intégration de la
   plateforme agréée. L'implémentation actuelle est **simulée** et ne transmet rien.
+
+## Conventions
+
+- **Langue.** Le vocabulaire du métier est en français, sans accents dans les identifiants (`Facture`, `valider`,
+  `dateEcheance`). Les suffixes techniques restent en anglais (`…Service`, `…Controller`, `…Repository`, `find…`).
+  Commentaires, messages et commits sont en français.
+- **Dépendances entre paquets du back-end.** `web → service → domain`, `service → repo → domain`,
+  `config → service`. `service` n'importe jamais `web` ; `domain` n'importe aucun autre paquet du projet ;
+  un contrôleur n'appelle jamais un dépôt et ne porte pas `@Transactional`.
+- **Règles métier.** Elles vivent dans les entités (`Facture.valider`, `Contrat.terminerLe`…), pas dans les
+  contrôleurs. `Facture` n'a pas de setters. Les services lancent des exceptions du paquet `domain`,
+  que `web/ErreursApi` traduit en réponses HTTP.
+- **Migrations.** Un fichier `V…sql` déjà fusionné ne se modifie jamais : tout changement de schéma est un
+  nouveau fichier. Chaque contrainte porte un nom.
+- **Front-end.** Formulaires réactifs typés ; aucun `error:` dans les `subscribe` des écrans, l'intercepteur
+  affiche les erreurs ; pas de style dans les gabarits.
+- **Avant de commiter.** `./mvnw spotless:apply` puis `./mvnw verify` dans `backend/` ;
+  `npm run format`, `npm run lint`, `npm test` dans `frontend/`.
+- **Polices.** Les polices DejaVu incorporées aux PDF sont distribuées avec leur licence
+  (`backend/src/main/resources/fonts/LICENSE-DejaVu.txt`).
+
+Le détail des corrections issues de la revue de qualité est dans `DIRECTIVES_CORRECTIONS.md`, et leur état
+dans `AVANCEMENT.md`.
 
 ## Configuration de production
 
