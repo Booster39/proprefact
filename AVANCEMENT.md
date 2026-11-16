@@ -36,6 +36,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 17 | Hors directives : période typée `YearMonth` | Fait | voir journal |
 | 18 | Hors directives : conditions du vendeur regroupées | Fait | voir journal |
 | 19 | Hors directives : test d'intégration découpé par sujet | Fait | voir journal |
+| 20 | Hors directives : capture d'écran refaite, boutons d'action visibles | Fait | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -57,10 +58,9 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 
 ## Ce qui reste à faire
 
-Les 19 lots sont terminés. Ce qui suit n'a **pas** été fait ; chaque point
+Les 20 lots sont terminés. Ce qui suit n'a **pas** été fait ; chaque point
 est un travail à part, à décider avec le propriétaire du projet avant de le commencer.
 
-- **Capture d'écran du README.** `docs/ecran-factures.png` date d'avant la refonte des écrans.
 - **Déploiement.** Pas de Dockerfile ni de procédure de mise en production.
 - **Fonctions métier** listées dans le README, section « Reste à faire avant de vendre ».
 
@@ -208,6 +208,19 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
   suivante, enchaînée avec `;`, a supprimé le fichier d'origine : la vérification n'a alors compté
   que 27 tests au lieu de 38. Rien n'a été commité. Règle : enchaîne avec `&&` toute commande qui
   supprime quelque chose, et compare toujours le nombre de tests à celui du tableau ci-dessus.
+- **Lot 20, défaut d'affichage trouvé par la capture.** Sur un écran de 1200 points, la colonne des
+  actions de la liste des factures débordait : « Déposer », « Payée » et « Supprimer » n'étaient
+  visibles qu'en faisant défiler le tableau. Les boutons passent maintenant à la ligne dans leur
+  cellule (`td.actions-ligne`) et la page s'élargit à 1200 points. En dessous d'environ 1100
+  points (tablette, téléphone), le tableau défile toujours horizontalement : c'est voulu pour
+  l'instant, une vraie version mobile (cartes au lieu du tableau) reste à décider.
+- **Refaire la capture du README.** Lancer base, back-end et front comme pour le parcours manuel,
+  créer quatre clients avec un contrat chacun, générer novembre, mettre les factures dans des
+  statuts différents, puis capturer `/factures` à 1200 × 800 points, échelle 2. Le sélecteur de
+  mois s'affiche en anglais dans le Chromium de capture (langue du navigateur, pas de la page) :
+  ce n'est pas un défaut de l'application.
+- **Fusion dans `main`.** Ne fusionne dans `main` que sur demande explicite du propriétaire, pour
+  chaque lot ou groupe de lots : un accord donné une fois ne vaut pas pour les lots suivants.
 
 ## Journal
 
@@ -232,3 +245,4 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
 | 2026-11-16 | 17 | `periode` typée `YearMonth` avec `MoisConverter` ; plus aucun `YearMonth.parse` dans le code ; JSON inchangé et vérifié. |
 | 2026-11-16 | 18 | `ConditionsVendeur` regroupe IBAN, BIC et option pour les débits ; test du XML complété. |
 | 2026-11-16 | 19 | `ParcoursFacturationTest` découpé en `ComptesTest`, `FacturationTest`, `DepotTest`, `CloisonnementTest` sur une base `TestIntegration` ; même nombre de tests (38). |
+| 2026-11-16 | 20 | Capture `docs/ecran-factures.png` refaite (5 factures, tous les statuts) ; boutons d'action qui passent à la ligne au lieu de déborder ; page élargie à 1200 points. |

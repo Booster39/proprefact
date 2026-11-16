@@ -193,7 +193,13 @@ a {
 }
 .groupe-boutons {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.3rem;
+}
+/* Cellule des boutons d'une ligne : ils passent à la ligne plutôt que de faire défiler le tableau. */
+td.actions-ligne {
+  white-space: normal;
+  min-width: 9rem;
 }
 .erreur.petite {
   font-size: 0.78rem;
