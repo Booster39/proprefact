@@ -277,6 +277,7 @@ class ParcoursFacturationTest {
         String generees = envoyer(post("/api/factures/generer-mensuelles").param("mois", "2026-11"), jeton, null);
         assertThat(JsonPath.<Integer>read(generees, "$.length()")).isEqualTo(1);
         assertThat(JsonPath.<Integer>read(generees, "$[0].lignes.length()")).isEqualTo(2);
+        assertThat(JsonPath.<String>read(generees, "$[0].periode")).isEqualTo("2026-11");
         assertThat(JsonPath.<Double>read(generees, "$[0].totalHt")).isEqualTo(813.33);
         assertThat(JsonPath.<Double>read(generees, "$[0].totalTva")).isEqualTo(162.67);
         assertThat(JsonPath.<Double>read(generees, "$[0].totalTtc")).isEqualTo(976.00);

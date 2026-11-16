@@ -9,6 +9,7 @@ import com.proprefact.domain.Facture;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -23,7 +24,7 @@ class FacturXServiceTest {
 
     @BeforeAll
     static void genererUneFacture() throws Exception {
-        Facture facture = Facture.brouillon(client(), "2026-11");
+        Facture facture = Facture.brouillon(client(), YearMonth.of(2026, 11));
         facture.ajouter(ligne("Entretien des bureaux – Bureaux Bellecour – novembre 2026", "1", "1480.00", "20"));
         facture.ajouter(ligne("Vitrerie", "2.5", "333.33", "10"));
         facture.ajouter(ligne("Prestation exonérée", "1", "50", "0"));

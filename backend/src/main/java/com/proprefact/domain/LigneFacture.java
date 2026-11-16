@@ -5,6 +5,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.ManyToOne;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.YearMonth;
 import lombok.Getter;
 
 /** Ligne d'une facture. Elle ne change plus une fois créée ; elle rejoint sa facture par {@link Facture#ajouter}. */
@@ -17,7 +18,7 @@ public class LigneFacture extends TenantEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Contrat contrat;
 
-    private String periode;
+    private YearMonth periode;
     private String designation;
     private BigDecimal quantite;
     private BigDecimal prixUnitaireHt;
@@ -39,8 +40,8 @@ public class LigneFacture extends TenantEntity {
         return new LigneFacture(designation, quantite, prixUnitaireHt, tauxTva);
     }
 
-    /** Mensualité d'un contrat pour une période (AAAA-MM) : une unité au montant et au taux du contrat. */
-    public static LigneFacture mensualite(Contrat contrat, String periode, String designation) {
+    /** Mensualité d'un contrat pour un mois : une unité au montant et au taux du contrat. */
+    public static LigneFacture mensualite(Contrat contrat, YearMonth periode, String designation) {
         LigneFacture ligne =
                 new LigneFacture(designation, BigDecimal.ONE, contrat.getMontantMensuelHt(), contrat.getTauxTva());
         ligne.contrat = contrat;

@@ -78,22 +78,20 @@ public class FacturationService {
      * Le mois est facturé en entier, sans prorata pour les contrats commencés ou terminés en cours de mois.
      */
     public List<Facture> genererMensuelles(YearMonth mois) {
-        String periode = mois.toString();
-        Set<Long> dejaFactures = lignes.findContratsDejaFactures(periode);
+        Set<Long> dejaFactures = lignes.findContratsDejaFactures(mois);
         Map<Client, Facture> parClient = new LinkedHashMap<>();
         for (Contrat c : contrats.findAllAvecSiteEtClient()) {
             if (!c.actifPendant(mois) || dejaFactures.contains(c.getId())) {
                 continue;
             }
-            Facture f =
-                    parClient.computeIfAbsent(c.getSite().getClient(), client -> Facture.brouillon(client, periode));
+            Facture f = parClient.computeIfAbsent(c.getSite().getClient(), client -> Facture.brouillon(client, mois));
             String designation = "%s – %s – %s %d"
                     .formatted(
                             c.getLibelle(),
                             c.getSite().getNom(),
                             mois.getMonth().getDisplayName(TextStyle.FULL, Locale.FRENCH),
                             mois.getYear());
-            f.ajouter(LigneFacture.mensualite(c, periode, designation));
+            f.ajouter(LigneFacture.mensualite(c, mois, designation));
         }
         return factures.saveAll(new ArrayList<>(parClient.values()));
     }

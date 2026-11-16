@@ -130,7 +130,8 @@ public final class Dtos {
                             : f.getClient().getRaisonSociale(),
                     f.getDateEmission(),
                     f.getDateEcheance(),
-                    f.getPeriode(),
+                    // Toujours « AAAA-MM » dans le JSON, quel que soit le réglage de sérialisation des dates.
+                    f.getPeriode() != null ? f.getPeriode().toString() : null,
                     f.getTotalHt(),
                     f.getTotalTva(),
                     f.getTotalTtc(),

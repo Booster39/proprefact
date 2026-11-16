@@ -33,6 +33,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 14 | Projet : licences, README, divers | Fait | voir journal |
 | 15 | Hors directives : règles d'architecture testées, garde-fous de build | Fait | voir journal |
 | 16 | Hors directives : plus aucun setter dans les entités | Fait | voir journal |
+| 17 | Hors directives : période typée `YearMonth` | Fait | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -54,11 +55,9 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 
 ## Ce qui reste à faire
 
-Les 16 lots sont terminés. Ce qui suit n'a **pas** été fait ; chaque point
+Les 17 lots sont terminés. Ce qui suit n'a **pas** été fait ; chaque point
 est un travail à part, à décider avec le propriétaire du projet avant de le commencer.
 
-- **`periode` en `String`.** `Facture.periode` et `LigneFacture.periode` restent des chaînes
-  « AAAA-MM » reparsées dans `FactureXml` ; un `AttributeConverter<YearMonth, String>` les typerait.
 - **Coordonnées bancaires du vendeur.** `vendeurIban`, `vendeurBic` et `vendeurOptionTvaDebits` sont
   des champs de `Facture` à côté de l'objet `vendeur`.
 - **`ParcoursFacturationTest`.** Toujours un seul fichier (11 tests) avec ses classes de test
@@ -191,6 +190,10 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
 - **Lot 16, `AuthService.inscrire`.** Le déroulement est inchangé (même ordre, mêmes réponses) ;
   seule l'écriture change. Les tests d'inscription, de réinscription et de remplacement d'une
   inscription non confirmée passent sans modification.
+- **Lot 17, période.** `Facture.periode` et `LigneFacture.periode` sont des `YearMonth`, enregistrés
+  « AAAA-MM » par `domain/MoisConverter` (appliqué automatiquement, aussi aux paramètres de
+  requête). Le schéma ne change pas. Le JSON garde la chaîne « 2026-11 » : `FactureDto` la convertit
+  explicitement, et `ParcoursFacturationTest` le vérifie.
 
 ## Journal
 
@@ -212,3 +215,4 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
 | 2026-11-14 | 14 | Licence des polices DejaVu jointe (et présente dans le jar), README : capture d'écran, exemple de facture, organisation du front, section « Conventions » ; `.gitignore` complété ; paquet npm renommé `proprefact-frontend` 0.1.0. |
 | 2026-11-16 | 15 | `ArchitectureTest` (5 règles), exceptions métier dans `AuthService`, `maven-enforcer`, rapport de couverture JaCoCo. |
 | 2026-11-16 | 16 | `@Setter` retiré de `Client`, `Site`, `Contrat`, `LigneFacture`, `Entreprise`, `Utilisateur`, `CompteurFacture` ; constructeurs et méthodes métier à la place ; `FicheClient`, `FicheEntreprise` ; règle d'architecture « aucun setter dans le domaine » ; `Exemples` et `UtilisateurTest`. |
+| 2026-11-16 | 17 | `periode` typée `YearMonth` avec `MoisConverter` ; plus aucun `YearMonth.parse` dans le code ; JSON inchangé et vérifié. |

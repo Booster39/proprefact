@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import org.junit.jupiter.api.Test;
 
 class FactureTest {
@@ -111,10 +112,10 @@ class FactureTest {
     void uneMensualiteReprendLeMontantEtLeTauxDuContrat() {
         Contrat contrat = Exemples.contrat(LocalDate.of(2026, 1, 1), null);
 
-        LigneFacture mensualite = LigneFacture.mensualite(contrat, "2026-11", "Entretien – novembre 2026");
+        LigneFacture mensualite = LigneFacture.mensualite(contrat, YearMonth.of(2026, 11), "Entretien – novembre 2026");
 
         assertThat(mensualite.getContrat()).isSameAs(contrat);
-        assertThat(mensualite.getPeriode()).isEqualTo("2026-11");
+        assertThat(mensualite.getPeriode()).isEqualTo(YearMonth.of(2026, 11));
         assertThat(mensualite.getQuantite()).isEqualByComparingTo("1");
         assertThat(mensualite.montantHt()).isEqualByComparingTo("480.00");
         assertThat(mensualite.getTauxTva()).isEqualByComparingTo("20");

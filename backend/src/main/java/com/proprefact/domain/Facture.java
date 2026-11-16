@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -37,8 +38,8 @@ public class Facture extends TenantEntity {
 
     private LocalDate dateEmission;
     private LocalDate dateEcheance;
-    /** Mois facturé au format AAAA-MM pour les factures issues des contrats. */
-    private String periode;
+    /** Mois facturé, pour les factures issues des contrats ; nul pour une facture ponctuelle. */
+    private YearMonth periode;
 
     private BigDecimal totalHt = BigDecimal.ZERO;
     private BigDecimal totalTva = BigDecimal.ZERO;
@@ -77,8 +78,8 @@ public class Facture extends TenantEntity {
     /** Réservé à JPA : une facture se crée avec {@link #brouillon}. */
     protected Facture() {}
 
-    /** Nouveau brouillon ; la période (AAAA-MM) est nulle pour une facture ponctuelle. */
-    public static Facture brouillon(Client client, String periode) {
+    /** Nouveau brouillon ; la période est nulle pour une facture ponctuelle. */
+    public static Facture brouillon(Client client, YearMonth periode) {
         Facture facture = new Facture();
         facture.client = client;
         facture.periode = periode;

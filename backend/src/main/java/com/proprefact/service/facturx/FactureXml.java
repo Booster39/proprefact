@@ -74,8 +74,8 @@ class FactureXml {
                         .formatted(
                                 ChronoUnit.DAYS.between(facture.getDateEmission(), facture.getDateEcheance()),
                                 DATE.format(facture.getDateEcheance())));
-        if (facture.getPeriode() != null) {
-            YearMonth mois = YearMonth.parse(facture.getPeriode());
+        YearMonth mois = facture.getPeriode();
+        if (mois != null) {
             donnees.setDetailedDeliveryPeriod(date(mois.atDay(1)), date(mois.atEndOfMonth()));
         }
         // Exigibilité de la TVA : 5 = à la facturation (option débits), 72 = à l'encaissement (régime des
@@ -97,9 +97,7 @@ class FactureXml {
     }
 
     private static LocalDate finDePrestation(Facture facture) {
-        return facture.getPeriode() != null
-                ? YearMonth.parse(facture.getPeriode()).atEndOfMonth()
-                : facture.getDateEmission();
+        return facture.getPeriode() != null ? facture.getPeriode().atEndOfMonth() : facture.getDateEmission();
     }
 
     private static Date date(LocalDate jour) {
