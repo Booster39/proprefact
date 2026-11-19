@@ -7,7 +7,7 @@
 # données : la pile de production locale n'est pas touchée.
 #   ./deploiement/essai.sh                      construit l'image puis l'essaie
 #   SANS_CONSTRUCTION=1 ./deploiement/essai.sh  essaie l'image « proprefact » déjà construite
-#   POSTGRES_VERSION=18 ./deploiement/essai.sh  essaie avec PostgreSQL 18 (version fournie par Railway)
+#   POSTGRES_VERSION=18 ./deploiement/essai.sh  essaie avec PostgreSQL 18 (version conseillée chez Clever Cloud)
 set -euo pipefail
 ici="$(cd "$(dirname "$0")" && pwd)"
 port="${PORT_HTTP:-18080}"

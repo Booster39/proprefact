@@ -66,7 +66,7 @@ class FrontTest extends TestIntegration {
         mvc.perform(get("/api/inexistant")).andExpect(status().isUnauthorized());
     }
 
-    /** Vérification de santé de Railway : accessible sans connexion, sans aucun détail, seul point d'Actuator. */
+    /** Vérification de santé de Clever Cloud : accessible sans connexion, sans aucun détail, seul point d'Actuator. */
     @Test
     void laSanteEstPubliqueEtSansDetail() throws Exception {
         mvc.perform(get("/actuator/health"))

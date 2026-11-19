@@ -38,7 +38,8 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 19 | Hors directives : test d'intégration découpé par sujet | Fait | voir journal |
 | 20 | Hors directives : capture d'écran refaite, boutons d'action visibles | Fait | voir journal |
 | 21 | Hors directives : images Docker et lancement de production | Fait | voir journal |
-| 22 | Hors directives : hébergement Railway, un seul service | Fait, sauf ce qui exige un compte Railway | voir journal |
+| 22 | Hors directives : hébergement Railway, un seul service | Fait ; Railway remplacé par Clever Cloud au lot 23 | voir journal |
+| 23 | Hors directives : hébergement Clever Cloud à la place de Railway | Fait, sauf ce qui exige un compte Clever Cloud | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -48,7 +49,7 @@ Après le dernier lot terminé, ces commandes donnent :
 
 | Commande | Résultat |
 |---|---|
-| `cd backend && ./mvnw -B verify` (Docker lancé) | 54 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
+| `cd backend && ./mvnw -B verify` (Docker lancé) | 55 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
 | `cd frontend && npm run format:check` | `All matched files use Prettier code style!` |
 | `cd frontend && npm run lint` | `All files pass linting.` |
 | `cd frontend && npm test` | 6 fichiers, 16 tests réussis |
@@ -61,19 +62,18 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 
 ## Ce qui reste à faire
 
-Les 22 lots sont terminés. Le lot 22 a été fusionné dans `main` le 2026-11-19, à la demande du
-propriétaire. Ce qui suit n'a **pas** été fait ; chaque point est à décider avec lui.
+Les 23 lots sont terminés. Le lot 22 a été fusionné dans `main` le 2026-11-19, à la demande du
+propriétaire ; le lot 23 (Clever Cloud) est sur la branche `railway` seulement. Ce qui suit n'a **pas** été fait ;
+chaque point est à décider avec lui.
 
-- **Mise en ligne sur Railway** : à faire par le propriétaire en suivant `DEPLOIEMENT-RAILWAY.md` (aucun
-  assistant n'avait de compte Railway ; rien n'a été déployé). Après la mise en ligne, faire la vérification 6
-  de l'étape 8 du guide (un `X-Real-IP` inventé doit être ignoré par le proxy de Railway) et noter ici le
-  résultat.
-- **Offre Railway et e-mails.** Railway bloque le SMTP sortant hors offre Pro (documentation « Outbound
-  Networking »). Soit offre Pro (recommandé, aucun code à changer), soit écrire un envoi d'e-mails par l'API
-  HTTPS d'un fournisseur (nouvelle implémentation de `Messagerie`).
-- **Sauvegardes hors de Railway** (export `pg_dump` régulier vers un stockage externe) : factures à conserver
-  10 ans.
-- **`.railway/railway.ts`** : jamais appliqué à un vrai projet ; le format est en bêta chez Railway.
+- **Mise en ligne sur Clever Cloud** : à faire par le propriétaire en suivant `DEPLOIEMENT-CLEVER-CLOUD.md`
+  (aucun assistant n'avait de compte Clever Cloud ; rien n'a été déployé). Après la mise en ligne, faire la
+  vérification 6 de l'étape 8 du guide (adresse inventée dans `X-Forwarded-For` ignorée, chaque visiteur compté
+  à part) et noter ici le résultat.
+- **E-mails.** Aucune page trouvée de Clever Cloud ne dit si le SMTP sortant (587) est ouvert. S'il est fermé :
+  port 2525 de Brevo, sinon un envoi par l'API HTTPS d'un fournisseur (nouvelle implémentation de `Messagerie`).
+- **Sauvegardes hors de Clever Cloud** (export `pg_dump` régulier vers un stockage externe) : Clever Cloud ne
+  garde que 7 jours, les factures sont à conserver 10 ans.
 - **Fonctions métier** listées dans le README, section « Reste à faire avant de vendre ».
 
 ## Écarts et pièges rencontrés
@@ -314,12 +314,41 @@ propriétaire. Ce qui suit n'a **pas** été fait ; chaque point est à décider
   n'a pas pu télécharger Maven depuis Maven Central (`wget: Failed to fetch`), échec réseau ponctuel, le même
   Dockerfile ayant réussi juste avant. L'étape Maven part désormais de l'image officielle
   `maven:3.9.11-eclipse-temurin-21` (même version que le wrapper) : plus de téléchargement de Maven à chaque
-  construction, ni en intégration continue ni sur Railway. Les dépendances viennent toujours de Maven Central :
-  l'étape 7 de `DEPLOIEMENT-RAILWAY.md` dit au propriétaire de relancer (**Redeploy**) si la construction échoue
-  sur un téléchargement.
+  construction, ni en intégration continue ni chez l'hébergeur. Les dépendances viennent toujours de Maven
+  Central : l'étape 7 du guide de mise en ligne (`DEPLOIEMENT-CLEVER-CLOUD.md` depuis le lot 23) dit au
+  propriétaire de relancer la construction si elle échoue sur un téléchargement.
 - **Lot 22, actions GitHub en v5.** `.github/workflows/ci.yml` utilise `actions/checkout@v5`,
   `actions/setup-java@v5` et `actions/setup-node@v5`, qui tournent sous Node.js 24 : les v4 visaient Node.js 20,
   déprécié, et GitHub les y forçait avec un avertissement.
+- **Lot 23, Railway abandonné.** À la demande du propriétaire, l'hébergement passe sur Clever Cloud (choisi
+  parmi Clever Cloud, Scaleway, un serveur virtuel et Fly.io : français, Paris, application Docker et PostgreSQL
+  gérés, déploiement à chaque `git push`). `DEPLOIEMENT-RAILWAY.md` et `.railway/` sont supprimés (ils restent
+  dans l'historique Git). Les entrées « Lot 22 » ci-dessus sur l'adresse IP (`X-Real-IP`), la base (`PG*`),
+  `railway.json`, le SDK et le SMTP de Railway ne s'appliquent plus ; le reste du lot 22 (image unique, front
+  servi par Spring Boot, santé, `deploiement/`) est inchangé.
+- **Lot 23, sources.** `www.clever-cloud.com` n'est pas joignable depuis l'environnement de travail (nom non
+  résolu) : tout vient des extraits de sa documentation renvoyés par la recherche web, listés à la fin du guide.
+  Ce qui n'a pas pu être confirmé y est marqué « ⚠ » : SMTP sortant, noms exacts des menus, mise en veille,
+  prix, taille de l'instance de construction.
+- **Lot 23, adresse IP derrière Clever Cloud.** Le proxy de Clever Cloud (Sōzu) ne pose pas `X-Real-IP` : la
+  FAQ de Clever Cloud dit d'utiliser `X-Forwarded-For`, où il AJOUTE l'adresse du client (la partie reçue du
+  client « n'est pas fiable », pull request n° 1685 de Sōzu). `web/AdresseClient` lit donc l'en-tête configuré
+  (`ENTETE_IP_CLIENT=X-Forwarded-For` sur Clever Cloud) mais seulement sa **dernière** adresse, et sur la
+  dernière ligne si l'en-tête arrive en plusieurs lignes. Dernière adresse malformée : adresse de la connexion
+  (jamais l'avant-dernière, que le client a pu écrire). Ce n'est **pas** le mode `framework` de Spring, qui prend
+  la première adresse : `server.forward-headers-strategy=none` reste fixé. Risque restant, écrit dans le guide
+  (vérification 6 de l'étape 8) : si un second proxy interne s'intercale, la dernière adresse serait la sienne et
+  tous les visiteurs partageraient un compteur. `AdresseClientTest` (4 tests) et `AdresseIpTest` (3 tests, en-tête
+  `X-Forwarded-For` simulé comme le proxy le transmet) couvrent ces cas ; en lisant la première adresse au lieu
+  de la dernière, 4 de ces 7 tests échouent (vérifié en simulant le défaut).
+- **Lot 23, base Clever Cloud.** `spring.datasource.*` lit `DB_*`, et à défaut les variables du module
+  PostgreSQL de Clever Cloud lié à l'application : `POSTGRESQL_ADDON_HOST`, `_PORT` (5432 par défaut), `_DB`,
+  `_USER`, `_PASSWORD`. Les `PG*` de Railway ne sont plus lues. `deploiement/docker-compose.yml` passe les
+  mêmes `POSTGRESQL_ADDON_*` à l'image, donc `essai.sh` et l'intégration continue essaient la configuration de
+  Clever Cloud. `ConnexionBaseTest` (3 tests) adapté.
+- **Lot 23, santé et port.** Clever Cloud attend une application Docker sur le port 8080 (défaut de
+  l'application) et appelle `CC_HEALTH_CHECK_PATH` (`/actuator/health`) à chaque déploiement ; seule une réponse
+  2xx valide le déploiement.
 - **Vérifier un déploiement.** `./deploiement/essai.sh` lance une pile jetable (projet `proprefact-essai`,
   secrets aléatoires, port 18080) et déroule : santé, accueil, `/factures`, un `.js` en cache, `/api/clients`
   401, inscription 202, lien de confirmation lu dans le journal, confirmation, client, site, contrat, facture
@@ -361,4 +390,5 @@ propriétaire. Ce qui suit n'a **pas** été fait ; chaque point est à décider
 | 2026-11-19 | 22 (6/7) | nginx et les deux images supprimés ; `deploiement/docker-compose.yml` avec l'image unique ; `deploiement/essai.sh` (parcours de bout en bout) réussi en local sur PostgreSQL 16 et 18 et ajouté à l'intégration continue ; README, section « Déploiement », réécrite. |
 | 2026-11-19 | 22 (7/7) | Guide `DEPLOIEMENT-RAILWAY.md` pour le propriétaire (offre Pro à cause du SMTP, projet en Europe, PostgreSQL, dépôt GitHub, variables, une instance sans veille, domaine, sauvegardes, mises à jour, vérifications, configuration en fichier) ; ce qui n'a pas pu être vérifié y est listé. |
 | 2026-11-19 | 22 | Branche `railway` fusionnée dans `main` (avance rapide) à la demande du propriétaire. Une fois le service Railway relié à `main`, chaque `git push` sur `main` le met en ligne. |
+| 2026-11-19 | 23 | Hébergement sur Clever Cloud à la place de Railway : limite par IP sur la dernière adresse de `X-Forwarded-For` (`AdresseClient`, tests adaptés et complétés), base lue dans `POSTGRESQL_ADDON_*`, `deploiement/` aligné ; guide `DEPLOIEMENT-CLEVER-CLOUD.md` ; `DEPLOIEMENT-RAILWAY.md` et `.railway/` supprimés ; README mis à jour. |
 | 2026-11-19 | 21 | Dockerfiles back et front, `nginx.conf`, `deploiement/docker-compose.yml`, `.env.exemple`, `construire.sh` ; images construites en intégration continue ; deux défauts de nginx corrigés (contournement de la limite par IP, back-end recréé injoignable). |

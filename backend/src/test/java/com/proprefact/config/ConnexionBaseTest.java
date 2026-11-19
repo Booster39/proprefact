@@ -10,21 +10,21 @@ import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.support.ResourcePropertySource;
 
-/** Lecture des réglages de la base dans application.properties : DB_* d'abord, sinon les variables PG* de Railway. */
+/** Lecture des réglages de la base dans application.properties : DB_* d'abord, sinon celles de Clever Cloud. */
 class ConnexionBaseTest {
 
     @Test
-    void lesVariablesDeRailwaySuffisent() throws IOException {
+    void lesVariablesDeCleverCloudSuffisent() throws IOException {
         StandardEnvironment environnement = environnement(Map.of(
-                "PGHOST", "postgres.railway.internal",
-                "PGPORT", "5432",
-                "PGDATABASE", "railway",
-                "PGUSER", "postgres",
-                "PGPASSWORD", "secret-de-test"));
+                "POSTGRESQL_ADDON_HOST", "bxyz-postgresql.services.clever-cloud.com",
+                "POSTGRESQL_ADDON_PORT", "50013",
+                "POSTGRESQL_ADDON_DB", "bxyz",
+                "POSTGRESQL_ADDON_USER", "uxyz",
+                "POSTGRESQL_ADDON_PASSWORD", "secret-de-test"));
 
         assertThat(environnement.getProperty("spring.datasource.url"))
-                .isEqualTo("jdbc:postgresql://postgres.railway.internal:5432/railway");
-        assertThat(environnement.getProperty("spring.datasource.username")).isEqualTo("postgres");
+                .isEqualTo("jdbc:postgresql://bxyz-postgresql.services.clever-cloud.com:50013/bxyz");
+        assertThat(environnement.getProperty("spring.datasource.username")).isEqualTo("uxyz");
         assertThat(environnement.getProperty("spring.datasource.password")).isEqualTo("secret-de-test");
     }
 
@@ -34,10 +34,10 @@ class ConnexionBaseTest {
                 "DB_URL", "jdbc:postgresql://db:5432/proprefact",
                 "DB_USER", "proprefact",
                 "DB_PASSWORD", "autre-secret",
-                "PGHOST", "ignore",
-                "PGDATABASE", "ignore",
-                "PGUSER", "ignore",
-                "PGPASSWORD", "ignore"));
+                "POSTGRESQL_ADDON_HOST", "ignore",
+                "POSTGRESQL_ADDON_DB", "ignore",
+                "POSTGRESQL_ADDON_USER", "ignore",
+                "POSTGRESQL_ADDON_PASSWORD", "ignore"));
 
         assertThat(environnement.getProperty("spring.datasource.url"))
                 .isEqualTo("jdbc:postgresql://db:5432/proprefact");
@@ -50,9 +50,9 @@ class ConnexionBaseTest {
         StandardEnvironment environnement = environnement(Map.of());
 
         assertThatThrownBy(() -> environnement.getProperty("spring.datasource.url"))
-                .hasMessageContaining("PGHOST");
+                .hasMessageContaining("POSTGRESQL_ADDON_HOST");
         assertThatThrownBy(() -> environnement.getProperty("spring.datasource.password"))
-                .hasMessageContaining("PGPASSWORD");
+                .hasMessageContaining("POSTGRESQL_ADDON_PASSWORD");
     }
 
     /** application.properties seul, avec les variables données à la place de celles de la machine. */

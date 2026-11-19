@@ -47,7 +47,7 @@
       <artifactId>spring-boot-starter-flyway</artifactId>
     </dependency>
     <dependency>
-      <!-- Seulement /actuator/health, pour la vérification de santé de Railway (voir application.properties). -->
+      <!-- Seulement /actuator/health, pour la vérification de santé de Clever Cloud (voir application.properties). -->
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>

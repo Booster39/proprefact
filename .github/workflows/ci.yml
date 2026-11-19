@@ -37,15 +37,15 @@ jobs:
       - run: npm test
       - run: npx ng build
 
-  # Image unique (Dockerfile de la racine), celle que construit Railway : front compilé, jar, image finale.
+  # Image unique (Dockerfile de la racine), celle que construit Clever Cloud : front compilé, jar, image finale.
   image:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - name: Construction complète du Dockerfile
         run: docker build -t proprefact .
-      # Image lancée contre PostgreSQL 16 (tests) puis 18 (version de Railway) : accueil, API protégée,
-      # inscription, confirmation, facture validée, Factur-X.
+      # Image lancée contre PostgreSQL 16 (tests) puis 18 (version conseillée chez Clever Cloud) : accueil, API
+      # protégée, inscription, confirmation, facture validée, Factur-X.
       - name: Essai de bout en bout, PostgreSQL 16
         run: SANS_CONSTRUCTION=1 ./deploiement/essai.sh
       - name: Essai de bout en bout, PostgreSQL 18

@@ -1,6 +1,6 @@
 # Image unique de ProPreFact : Spring Boot sert l'API et le front-end Angular à la même adresse.
-# Construite par Railway à chaque mise à jour de la branche (voir DEPLOIEMENT-RAILWAY.md) et par l'intégration
-# continue. Les tests ne sont pas relancés ici : ils tournent dans l'intégration continue, avec PostgreSQL.
+# Construite par Clever Cloud à chaque mise à jour de la branche (voir DEPLOIEMENT-CLEVER-CLOUD.md) et par
+# l'intégration continue. Les tests ne sont pas relancés ici : ils tournent dans l'intégration continue, avec PostgreSQL.
 # Aucun secret n'est nécessaire à la construction : ils ne servent qu'au lancement (variables d'environnement).
 
 # 1. Front-end : compilation Angular.
@@ -32,7 +32,7 @@ COPY --from=back /src/app.jar app.jar
 USER proprefact
 
 ENV TZ=Europe/Paris
-# Port d'écoute : variable PORT si l'hébergeur la fournit (Railway le fait), sinon 8080.
+# Port d'écoute : variable PORT si l'hébergeur la fournit, sinon 8080 (port qu'attend Clever Cloud).
 EXPOSE 8080
 # Le conteneur dispose de la mémoire que lui donne l'hébergeur : la JVM en prend 75 %.
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "/app/app.jar"]

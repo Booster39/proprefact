@@ -81,14 +81,13 @@ dans `AVANCEMENT.md`.
 ## Déploiement
 
 L'application est **une seule image** (`Dockerfile` à la racine) : Spring Boot sert l'API et le front-end Angular
-compilé à la même adresse, sans nginx. Elle est hébergée sur **Railway**, avec la base PostgreSQL de Railway :
-le pas à pas est dans [DEPLOIEMENT-RAILWAY.md](DEPLOIEMENT-RAILWAY.md). Chaque `git push` sur `main` y déclenche
-la construction et la mise en ligne ; les migrations Flyway s'appliquent au démarrage.
+compilé à la même adresse, sans nginx. Elle est hébergée sur **Clever Cloud** (Paris), avec le module PostgreSQL
+de Clever Cloud : le pas à pas est dans [DEPLOIEMENT-CLEVER-CLOUD.md](DEPLOIEMENT-CLEVER-CLOUD.md). Chaque
+`git push` sur `main` y déclenche la construction et la mise en ligne ; les migrations Flyway s'appliquent au
+démarrage.
 
 - **Une seule instance, jamais en veille** : la limite de tentatives de connexion est en mémoire et la relance
   des dépôts tourne chaque minute dans l'application.
-- `.railway/railway.ts` décrit le service Railway (Dockerfile, santé sur `/actuator/health`, redémarrage, région
-  Europe, une instance) ; il s'applique avec la CLI Railway, pas à chaque `git push`.
 - L'intégration continue construit l'image et la lance contre PostgreSQL 16 et 18 (`deploiement/essai.sh`).
 
 Pour essayer la production en local (ou héberger ailleurs), `deploiement/` lance l'image avec PostgreSQL :
@@ -109,12 +108,12 @@ docker compose -f deploiement/docker-compose.yml up -d --build   # application s
 
 | Variable | Rôle |
 |---|---|
-| `DB_URL`, `DB_USER`, `DB_PASSWORD` | Connexion PostgreSQL ; à défaut, `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD` (fournies par Railway) |
-| `PORT` | Port d'écoute (8080 par défaut ; Railway le fournit) |
+| `DB_URL`, `DB_USER`, `DB_PASSWORD` | Connexion PostgreSQL ; à défaut, `POSTGRESQL_ADDON_HOST`, `_PORT`, `_DB`, `_USER`, `_PASSWORD` (fournies par le module PostgreSQL de Clever Cloud) |
+| `PORT` | Port d'écoute (8080 par défaut, port qu'attend Clever Cloud) |
 | `JWT_SECRET` | Secret de signature des jetons, 32 caractères minimum, obligatoire |
 | `APP_URL` | Adresse publique de l'application (sans `/` final), utilisée dans les liens envoyés par e-mail |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_EXPEDITEUR` | Serveur SMTP d'envoi des e-mails |
-| `ENTETE_IP_CLIENT` | En-tête où le proxy de l'hébergeur écrit l'adresse IP du client (`X-Real-IP` sur Railway), pour limiter les tentatives sur la vraie adresse ; vide sans proxy |
+| `ENTETE_IP_CLIENT` | En-tête où le proxy de l'hébergeur écrit l'adresse IP du client (`X-Forwarded-For` sur Clever Cloud) ; seule sa dernière adresse, ajoutée par le proxy, est lue. Sert à limiter les tentatives sur la vraie adresse ; vide sans proxy |
 
 Sans `MAIL_HOST`, les e-mails (dont les liens de confirmation) sont seulement écrits dans le journal :
 pratique en développement, à ne jamais laisser en production.

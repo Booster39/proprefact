@@ -1,13 +1,13 @@
-# Production en local, comme sur Railway : une base PostgreSQL et l'image unique (Dockerfile de la racine), qui
-# sert l'API et le front-end à la même adresse. Sert à essayer une version avant de la pousser
-# (./deploiement/essai.sh), ou à héberger ailleurs que sur Railway. Réglages : fichier .env de ce dossier.
+# Production en local, comme sur Clever Cloud : une base PostgreSQL et l'image unique (Dockerfile de la racine),
+# qui sert l'API et le front-end à la même adresse. Sert à essayer une version avant de la pousser
+# (./deploiement/essai.sh), ou à héberger ailleurs que sur Clever Cloud. Réglages : fichier .env de ce dossier.
 # Nom distinct du docker-compose.yml de développement : sinon les deux partageraient le volume de données.
 name: proprefact-production
 
 services:
   db:
-    # Railway fournit aujourd'hui PostgreSQL 18 ; les tests tournent sur 16. POSTGRES_VERSION permet d'essayer l'un
-    # ou l'autre.
+    # PostgreSQL 18 est conseillé chez Clever Cloud ; les tests tournent sur 16. POSTGRES_VERSION permet d'essayer
+    # l'un ou l'autre.
     image: postgres:${POSTGRES_VERSION:-16}
     restart: unless-stopped
     environment:
@@ -35,12 +35,12 @@ services:
       db:
         condition: service_healthy
     environment:
-      # Mêmes variables que sur Railway (PG*), pour essayer la même configuration.
-      PGHOST: db
-      PGPORT: "5432"
-      PGDATABASE: proprefact
-      PGUSER: ${DB_USER}
-      PGPASSWORD: ${DB_PASSWORD}
+      # Mêmes variables que celles du module PostgreSQL de Clever Cloud, pour essayer la même configuration.
+      POSTGRESQL_ADDON_HOST: db
+      POSTGRESQL_ADDON_PORT: "5432"
+      POSTGRESQL_ADDON_DB: proprefact
+      POSTGRESQL_ADDON_USER: ${DB_USER}
+      POSTGRESQL_ADDON_PASSWORD: ${DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET manquant dans .env (32 caractères minimum)}
       APP_URL: ${APP_URL:?APP_URL manquant dans .env}
       MAIL_HOST: ${MAIL_HOST:-}
@@ -49,8 +49,8 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_EXPEDITEUR: ${MAIL_EXPEDITEUR:-no-reply@localhost}
       # Aucun proxy devant l'application ici : la limite par IP utilise l'adresse de la connexion. Si un proxy
-      # HTTPS est placé devant, mettre le nom de l'en-tête où IL écrit l'adresse du client (jamais
-      # X-Forwarded-For, que le client peut compléter).
+      # HTTPS est placé devant, mettre le nom de l'en-tête où IL écrit l'adresse du client : seule la dernière
+      # adresse de cet en-tête est lue, le proxy doit donc l'ajouter à la fin (comme Clever Cloud) ou le remplacer.
       ENTETE_IP_CLIENT: ${ENTETE_IP_CLIENT:-}
     ports:
       - "${PORT_HTTP:-8080}:8080"
