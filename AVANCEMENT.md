@@ -38,7 +38,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 19 | Hors directives : test d'intégration découpé par sujet | Fait | voir journal |
 | 20 | Hors directives : capture d'écran refaite, boutons d'action visibles | Fait | voir journal |
 | 21 | Hors directives : images Docker et lancement de production | Fait | voir journal |
-| 22 | Hors directives : hébergement Railway, un seul service (branche `railway`, non fusionnée) | Fait, sauf ce qui exige un compte Railway | voir journal |
+| 22 | Hors directives : hébergement Railway, un seul service | Fait, sauf ce qui exige un compte Railway | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -54,15 +54,15 @@ Après le dernier lot terminé, ces commandes donnent :
 | `cd frontend && npm test` | 6 fichiers, 16 tests réussis |
 | `cd frontend && npx ng build` | réussi |
 | `./deploiement/essai.sh` (image construite) ; idem avec `POSTGRES_VERSION=18` | `Essai réussi.` : 13 étapes `ok`, de l'accueil au Factur-X, sur PostgreSQL 16 et 18 |
-| intégration continue GitHub sur `railway` (commit `a069deb`) | 3 tâches réussies : `backend`, `frontend`, `image` (construction complète du `Dockerfile`, essai de bout en bout sur PostgreSQL 16 et 18) |
+| intégration continue GitHub sur `railway` (commit `6bfbe49`, exécution n° 10) | 3 tâches réussies : `backend`, `frontend`, `image` (construction complète du `Dockerfile`, essai de bout en bout sur PostgreSQL 16 et 18) |
 | parcours manuel dans le navigateur (voir ci-dessous) | 23 étapes réussies |
 
 Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherche d'abord pourquoi.
 
 ## Ce qui reste à faire
 
-Les 22 lots sont terminés. Le lot 22 est sur la branche `railway`, **non fusionnée** dans `main` : le
-propriétaire décide. Ce qui suit n'a **pas** été fait ; chaque point est à décider avec lui.
+Les 22 lots sont terminés. Le lot 22 a été fusionné dans `main` le 2026-11-19, à la demande du
+propriétaire. Ce qui suit n'a **pas** été fait ; chaque point est à décider avec lui.
 
 - **Mise en ligne sur Railway** : à faire par le propriétaire en suivant `DEPLOIEMENT-RAILWAY.md` (aucun
   assistant n'avait de compte Railway ; rien n'a été déployé). Après la mise en ligne, faire la vérification 6
@@ -355,4 +355,5 @@ propriétaire décide. Ce qui suit n'a **pas** été fait ; chaque point est à 
 | 2026-11-19 | 22 (5/7) | Actuator limité à `/actuator/health` (public, sans détail) ; `.railway/railway.ts` (remplaçant de `railway.json`, déprécié) : Dockerfile, santé, redémarrage, une instance en Europe, jamais en veille ; vérifié par `tsc` contre le SDK officiel. Test de santé ajouté à `FrontTest`. |
 | 2026-11-19 | 22 (6/7) | nginx et les deux images supprimés ; `deploiement/docker-compose.yml` avec l'image unique ; `deploiement/essai.sh` (parcours de bout en bout) réussi en local sur PostgreSQL 16 et 18 et ajouté à l'intégration continue ; README, section « Déploiement », réécrite. |
 | 2026-11-19 | 22 (7/7) | Guide `DEPLOIEMENT-RAILWAY.md` pour le propriétaire (offre Pro à cause du SMTP, projet en Europe, PostgreSQL, dépôt GitHub, variables, une instance sans veille, domaine, sauvegardes, mises à jour, vérifications, configuration en fichier) ; ce qui n'a pas pu être vérifié y est listé. |
+| 2026-11-19 | 22 | Branche `railway` fusionnée dans `main` (avance rapide) à la demande du propriétaire. Une fois le service Railway relié à `main`, chaque `git push` sur `main` le met en ligne. |
 | 2026-11-19 | 21 | Dockerfiles back et front, `nginx.conf`, `deploiement/docker-compose.yml`, `.env.exemple`, `construire.sh` ; images construites en intégration continue ; deux défauts de nginx corrigés (contournement de la limite par IP, back-end recréé injoignable). |
