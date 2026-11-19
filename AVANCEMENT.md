@@ -38,7 +38,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 19 | Hors directives : test d'intégration découpé par sujet | Fait | voir journal |
 | 20 | Hors directives : capture d'écran refaite, boutons d'action visibles | Fait | voir journal |
 | 21 | Hors directives : images Docker et lancement de production | Fait | voir journal |
-| 22 | Hors directives : hébergement Railway, un seul service | En cours (étape 1/7 : front servi par Spring Boot) | voir journal |
+| 22 | Hors directives : hébergement Railway, un seul service | En cours (étape 2/7 : Dockerfile de la racine) | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -249,6 +249,15 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
   Boot, qui fait un renvoi interne vers `index.html`. MockMvc n'exécute pas ce renvoi (pas de contenu, pas de
   type) : `FrontTest` vérifie donc `forwardedUrl("index.html")` pour `/`. En réel, `/` renvoie bien la page
   (vérifié avec `curl`).
+- **Lot 22, Dockerfile de la racine.** Trois étapes : Node (`npm ci`, `npx ng build`), Maven
+  (`-Dmaven.test.skip=true package`, le front compilé copié dans `../frontend/dist/frontend/browser`), image
+  finale `eclipse-temurin:21-jre`, utilisateur `proprefact` (uid 10001). Le port vient de `PORT`
+  (`server.port=${PORT:8080}`). Les conteneurs de l'environnement de travail n'ont pas de réseau : les deux
+  premières étapes ne s'y construisent pas. Pour vérifier localement, reproduire les étapes hors Docker sur une
+  copie propre, mettre le jar dans `<dossier>/src/app.jar`, puis
+  `docker buildx build --load --build-context back=<dossier> -t proprefact .` : le contexte nommé `back`
+  remplace l'étape Maven et seule l'étape finale du vrai Dockerfile est construite. La construction complète
+  n'est prouvée que par la tâche `image` de l'intégration continue.
 - **Vérifier un déploiement.** Un fichier de réglages jetable hors du dépôt
   (`docker compose … --env-file chemin/vers/essai.env`), `PORT_HTTP` libre, puis : accueil 200,
   `/factures` renvoie la page de l'application, `/api/clients` 401, inscription 202, lien de
@@ -280,4 +289,5 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
 | 2026-11-16 | 19 | `ParcoursFacturationTest` découpé en `ComptesTest`, `FacturationTest`, `DepotTest`, `CloisonnementTest` sur une base `TestIntegration` ; même nombre de tests (38). |
 | 2026-11-16 | 20 | Capture `docs/ecran-factures.png` refaite (5 factures, tous les statuts) ; boutons d'action qui passent à la ligne au lieu de déborder ; page élargie à 1200 points. |
 | 2026-11-19 | 22 (1/7) | Front Angular compilé embarqué dans le jar et servi par Spring Boot (`FrontConfig`) : adresses de l'application renvoyées vers `index.html`, cache long pour les fichiers hachés, `no-cache` pour `index.html`, en-têtes nosniff, X-Frame-Options et Referrer-Policy, compression ; `/api/**` reste protégé ; `FrontTest` (6 tests). Vérifié aussi avec le vrai jar et `curl`. |
+| 2026-11-19 | 22 (2/7) | `Dockerfile` et `.dockerignore` à la racine (Node, Maven, JRE, non root, `MaxRAMPercentage=75`), port lu dans `PORT` ; tâche `image` dans l'intégration continue, qui tourne aussi sur la branche `railway`. Étape finale construite localement avec le jar reproduit hors Docker, image lancée avec `PORT=9090` (`/factures` 200, uid 10001). |
 | 2026-11-19 | 21 | Dockerfiles back et front, `nginx.conf`, `deploiement/docker-compose.yml`, `.env.exemple`, `construire.sh` ; images construites en intégration continue ; deux défauts de nginx corrigés (contournement de la limite par IP, back-end recréé injoignable). |
