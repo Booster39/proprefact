@@ -158,6 +158,11 @@ Si le déploiement échoue, le journal dit pourquoi. Causes fréquentes : une va
 la propriété, par exemple `JWT_SECRET` ou `PGHOST`), un `JWT_SECRET` trop court, une référence `${{Postgres.…}}`
 avec un mauvais nom de service.
 
+Si c'est la **construction** qui échoue (**Build Logs**) pendant un téléchargement (`npm ci`, ou Maven avec
+`Could not transfer artifact` ou `Failed to fetch`), c'est en général un échec réseau passager entre Railway et
+les dépôts de paquets : relancez avec **Redeploy** avant de chercher plus loin. Si l'erreur revient à
+l'identique, demandez à un développeur.
+
 ## 8. Vérifier que tout marche
 
 Avec l'adresse de l'étape 6 (remplacez `https://VOTRE-ADRESSE`) :

@@ -314,7 +314,9 @@ propriétaire. Ce qui suit n'a **pas** été fait ; chaque point est à décider
   n'a pas pu télécharger Maven depuis Maven Central (`wget: Failed to fetch`), échec réseau ponctuel, le même
   Dockerfile ayant réussi juste avant. L'étape Maven part désormais de l'image officielle
   `maven:3.9.11-eclipse-temurin-21` (même version que le wrapper) : plus de téléchargement de Maven à chaque
-  construction, ni en intégration continue ni sur Railway. Les dépendances viennent toujours de Maven Central.
+  construction, ni en intégration continue ni sur Railway. Les dépendances viennent toujours de Maven Central :
+  l'étape 7 de `DEPLOIEMENT-RAILWAY.md` dit au propriétaire de relancer (**Redeploy**) si la construction échoue
+  sur un téléchargement.
 - **Lot 22, actions GitHub en v5.** `.github/workflows/ci.yml` utilise `actions/checkout@v5`,
   `actions/setup-java@v5` et `actions/setup-node@v5`, qui tournent sous Node.js 24 : les v4 visaient Node.js 20,
   déprécié, et GitHub les y forçait avec un avertissement.
