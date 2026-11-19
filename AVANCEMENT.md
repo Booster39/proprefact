@@ -315,6 +315,9 @@ propriétaire. Ce qui suit n'a **pas** été fait ; chaque point est à décider
   Dockerfile ayant réussi juste avant. L'étape Maven part désormais de l'image officielle
   `maven:3.9.11-eclipse-temurin-21` (même version que le wrapper) : plus de téléchargement de Maven à chaque
   construction, ni en intégration continue ni sur Railway. Les dépendances viennent toujours de Maven Central.
+- **Lot 22, `actions/checkout@v5`.** Les trois tâches de `.github/workflows/ci.yml` utilisent
+  `actions/checkout@v5`, qui tourne sous Node.js 24 : la v4 visait Node.js 20, déprécié, et GitHub l'y forçait
+  avec un avertissement.
 - **Vérifier un déploiement.** `./deploiement/essai.sh` lance une pile jetable (projet `proprefact-essai`,
   secrets aléatoires, port 18080) et déroule : santé, accueil, `/factures`, un `.js` en cache, `/api/clients`
   401, inscription 202, lien de confirmation lu dans le journal, confirmation, client, site, contrat, facture
