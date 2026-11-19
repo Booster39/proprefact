@@ -1,0 +1,56 @@
+# Application complète : base PostgreSQL, back-end, et nginx qui sert le front et relaie /api.
+# Construction et lancement : voir README, section « Déploiement ». Réglages : fichier .env de ce dossier.
+# Nom distinct du docker-compose.yml de développement : sinon les deux partageraient le volume de données.
+name: proprefact-production
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: proprefact
+      POSTGRES_USER: ${DB_USER:?DB_USER manquant dans .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD manquant dans .env}
+    volumes:
+      - donnees:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d proprefact"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    # Pas de port publié : la base n'est joignable que par le back-end.
+
+  backend:
+    image: proprefact-backend
+    build: ../backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/proprefact
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET manquant dans .env (32 caractères minimum)}
+      APP_URL: ${APP_URL:?APP_URL manquant dans .env}
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USER: ${MAIL_USER:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_EXPEDITEUR: ${MAIL_EXPEDITEUR:-no-reply@localhost}
+      # Le back-end est derrière nginx : il lit l'adresse IP réelle dans X-Forwarded-For.
+      FORWARD_HEADERS: framework
+      TZ: Europe/Paris
+    # Pas de port publié : le back-end n'est joignable qu'à travers nginx.
+
+  frontend:
+    image: proprefact-frontend
+    build: ../frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${PORT_HTTP:-80}:80"
+
+volumes:
+  donnees:

@@ -37,6 +37,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 18 | Hors directives : conditions du vendeur regroupées | Fait | voir journal |
 | 19 | Hors directives : test d'intégration découpé par sujet | Fait | voir journal |
 | 20 | Hors directives : capture d'écran refaite, boutons d'action visibles | Fait | voir journal |
+| 21 | Hors directives : images Docker et lancement de production | Fait | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -51,6 +52,7 @@ Après le dernier lot terminé, ces commandes donnent :
 | `cd frontend && npm run lint` | `All files pass linting.` |
 | `cd frontend && npm test` | 6 fichiers, 16 tests réussis |
 | `cd frontend && npx ng build` | réussi |
+| `./deploiement/construire.sh` puis `docker compose -f deploiement/docker-compose.yml up -d` | 3 conteneurs démarrés, parcours API à travers nginx réussi |
 | intégration continue GitHub sur `main` (commit `0f9be46`) | 2 tâches réussies (`backend`, `frontend`) |
 | parcours manuel dans le navigateur (voir ci-dessous) | 23 étapes réussies |
 
@@ -58,10 +60,12 @@ Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherch
 
 ## Ce qui reste à faire
 
-Les 20 lots sont terminés. Ce qui suit n'a **pas** été fait ; chaque point
+Les 21 lots sont terminés. Ce qui suit n'a **pas** été fait ; chaque point
 est un travail à part, à décider avec le propriétaire du projet avant de le commencer.
 
-- **Déploiement.** Pas de Dockerfile ni de procédure de mise en production.
+- **Hébergement.** Les images et le lancement sont prêts (lot 21), mais aucun hébergeur n'est
+  choisi : machine, nom de domaine, HTTPS, serveur d'envoi d'e-mails, sauvegardes automatiques de
+  la base. À décider avec le propriétaire.
 - **Fonctions métier** listées dans le README, section « Reste à faire avant de vendre ».
 
 ## Écarts et pièges rencontrés
@@ -221,6 +225,24 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
   ce n'est pas un défaut de l'application.
 - **Fusion dans `main`.** Ne fusionne dans `main` que sur demande explicite du propriétaire, pour
   chaque lot ou groupe de lots : un accord donné une fois ne vaut pas pour les lots suivants.
+- **Lot 21, déploiement.** `backend/Dockerfile` et `frontend/Dockerfile` copient des artefacts déjà
+  construits (jar, `dist/`) : les conteneurs de l'environnement de travail n'ont pas d'accès réseau,
+  une image qui télécharge ses dépendances n'y serait pas vérifiable. `deploiement/construire.sh`
+  enchaîne tests, compilation et images. Les images se construisent sans secret ; les secrets ne
+  servent qu'au lancement (`deploiement/.env`, ignoré par git). Le projet Docker s'appelle
+  `proprefact-production` pour ne pas partager le volume de la base de développement.
+- **Lot 21, deux défauts trouvés en lançant réellement la pile.** (1) nginx complétait l'en-tête
+  `X-Forwarded-For` envoyé par le client : en inventant une adresse à chaque requête, on
+  contournait la limite de tentatives de connexion (35 essais passés, vérifié). nginx remplace
+  maintenant l'en-tête par l'adresse réelle : blocage à la 31e tentative (vérifié). (2) Après
+  recréation du back-end (nouvelle adresse interne), nginx renvoyait 502 jusqu'à son redémarrage ;
+  il résout maintenant le nom `backend` par le DNS de Docker (vérifié). Ne pas revenir sur ces deux
+  réglages de `frontend/nginx.conf` sans relire leurs commentaires.
+- **Vérifier un déploiement.** Un fichier de réglages jetable hors du dépôt
+  (`docker compose … --env-file chemin/vers/essai.env`), `PORT_HTTP` libre, puis : accueil 200,
+  `/factures` renvoie la page de l'application, `/api/clients` 401, inscription 202, lien de
+  confirmation dans `docker compose … logs backend`, facture validée, Factur-X téléchargé.
+  Arrêter avec `down -v` (supprime le volume de la pile d'essai).
 
 ## Journal
 
@@ -246,3 +268,4 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
 | 2026-11-16 | 18 | `ConditionsVendeur` regroupe IBAN, BIC et option pour les débits ; test du XML complété. |
 | 2026-11-16 | 19 | `ParcoursFacturationTest` découpé en `ComptesTest`, `FacturationTest`, `DepotTest`, `CloisonnementTest` sur une base `TestIntegration` ; même nombre de tests (38). |
 | 2026-11-16 | 20 | Capture `docs/ecran-factures.png` refaite (5 factures, tous les statuts) ; boutons d'action qui passent à la ligne au lieu de déborder ; page élargie à 1200 points. |
+| 2026-11-19 | 21 | Dockerfiles back et front, `nginx.conf`, `deploiement/docker-compose.yml`, `.env.exemple`, `construire.sh` ; images construites en intégration continue ; deux défauts de nginx corrigés (contournement de la limite par IP, back-end recréé injoignable). |

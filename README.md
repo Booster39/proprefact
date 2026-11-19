@@ -78,6 +78,27 @@ l'emploi de `domain/Exemples`.
 Le détail des corrections issues de la revue de qualité est dans `DIRECTIVES_CORRECTIONS.md`, et leur état
 dans `AVANCEMENT.md`.
 
+## Déploiement
+
+Le dossier `deploiement/` lance l'application complète avec Docker : une base PostgreSQL, le back-end, et nginx
+qui sert le front-end et relaie `/api`. Seul nginx est exposé ; la base et le back-end ne sont joignables
+qu'entre conteneurs.
+
+```bash
+cp deploiement/.env.exemple deploiement/.env   # puis remplir chaque valeur (secrets : jamais commités)
+./deploiement/construire.sh                     # tests, compilation, puis images Docker
+docker compose -f deploiement/docker-compose.yml up -d
+```
+
+- Les images embarquent le jar et le front déjà compilés : `construire.sh` les produit avec les outils du
+  projet (tests compris) avant de construire les images, qui ne téléchargent rien.
+- Les données sont dans le volume Docker `proprefact-production_donnees`. Le sauvegarder, par exemple :
+  `docker compose -f deploiement/docker-compose.yml exec -T db pg_dump -U proprefact proprefact > sauvegarde.sql`.
+- HTTPS n'est pas géré ici : placer devant nginx le proxy HTTPS de l'hébergeur (ou Caddy, Traefik…). Dans ce
+  cas, lire le commentaire de `frontend/nginx.conf` sur l'adresse IP réelle du client.
+- Mise à jour : relancer `construire.sh` puis la commande `up -d` ; les migrations Flyway s'appliquent au
+  démarrage du back-end.
+
 ## Configuration de production
 
 | Variable | Rôle |
