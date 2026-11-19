@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.test.json.JsonCompareMode;
 
 /**
  * Le front-end est servi par Spring Boot à la même adresse que l'API. Les tests utilisent le petit index.html et le
@@ -63,6 +64,19 @@ class FrontTest extends TestIntegration {
     void lApiResteProtegee() throws Exception {
         mvc.perform(get("/api/clients")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/inexistant")).andExpect(status().isUnauthorized());
+    }
+
+    /** Vérification de santé de Railway : accessible sans connexion, sans aucun détail, seul point d'Actuator. */
+    @Test
+    void laSanteEstPubliqueEtSansDetail() throws Exception {
+        mvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"status\":\"UP\"}", JsonCompareMode.STRICT));
+        for (String adresse : new String[] {"/actuator", "/actuator/env", "/actuator/health/db", "/actuator/beans"}) {
+            mvc.perform(get(adresse))
+                    .andExpect(status().is4xxClientError())
+                    .andExpect(content().string(not(containsString(PAGE))));
+        }
     }
 
     @Test

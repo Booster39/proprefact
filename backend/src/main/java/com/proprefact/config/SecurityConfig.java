@@ -29,8 +29,13 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(a -> a.requestMatchers("/api/auth/**")
                         .permitAll()
+                        .requestMatchers("/actuator/health")
+                        .permitAll()
                         .requestMatchers("/api/**")
                         .authenticated()
+                        // Aucun autre point d'Actuator n'est exposé ; s'il l'était par erreur, il resterait fermé.
+                        .requestMatchers("/actuator/**")
+                        .denyAll()
                         // Le reste n'est que le front-end compilé (fichiers statiques et index.html), public.
                         .anyRequest()
                         .permitAll())

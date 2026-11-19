@@ -38,7 +38,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 19 | Hors directives : test d'intégration découpé par sujet | Fait | voir journal |
 | 20 | Hors directives : capture d'écran refaite, boutons d'action visibles | Fait | voir journal |
 | 21 | Hors directives : images Docker et lancement de production | Fait | voir journal |
-| 22 | Hors directives : hébergement Railway, un seul service | En cours (étape 4/7 : base de données Railway) | voir journal |
+| 22 | Hors directives : hébergement Railway, un seul service | En cours (étape 5/7 : santé et configuration Railway) | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -48,7 +48,7 @@ Après le dernier lot terminé, ces commandes donnent :
 
 | Commande | Résultat |
 |---|---|
-| `cd backend && ./mvnw -B verify` (Docker lancé) | 53 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
+| `cd backend && ./mvnw -B verify` (Docker lancé) | 54 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
 | `cd frontend && npm run format:check` | `All matched files use Prettier code style!` |
 | `cd frontend && npm run lint` | `All files pass linting.` |
 | `cd frontend && npm test` | 6 fichiers, 16 tests réussis |
@@ -277,6 +277,22 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
   le format `.railway/railway.ts` ne sait pas composer une chaîne (`jdbc:postgresql://…`) à partir de
   références (vérifié dans le SDK `railway` 3.17.0 : une référence est un objet, pas un texte). Sans aucune de
   ces variables, le démarrage échoue toujours (règle du lot 9). `ConnexionBaseTest` (3 tests) le vérifie.
+- **Lot 22, `railway.json` abandonné.** La consigne demandait `railway.json` ou `railway.toml`. D'après la
+  documentation actuelle de Railway (trouvée par recherche, `docs.railway.com` n'étant pas joignable d'ici), ce
+  format « Config as Code » est **déprécié** : les fichiers existants ne sont plus lus à partir du
+  **2026-12-01** et un nouveau service ne peut plus l'adopter. Le remplaçant est `.railway/railway.ts`
+  (« Infrastructure as Code », en bêta), appliqué par la CLI (`railway config plan` puis `apply`), **pas** à
+  chaque `git push`. Le fichier a été écrit contre les types du SDK `railway` 3.17.0 (paquet npm officiel,
+  `railway/iac`), compilé avec `tsc --strict` et évalué : la configuration produite contient bien le
+  constructeur `DOCKERFILE`, `healthcheckPath`, `restartPolicyType: ALWAYS`, `sleepApplication: false` et une
+  instance en `europe-west4-drams3a`. Il n'a **jamais** été appliqué à un vrai projet Railway (pas de compte).
+  Pour le revérifier : dans un dossier jetable, `npm i railway@3.17.0 typescript`, copier le fichier, `npx tsc
+  --noEmit --strict --module nodenext --moduleResolution nodenext railway.ts`.
+- **Lot 22, piège du SDK.** `ctx.randomString()` du SDK n'est **pas** aléatoire (empreinte SHA-256 d'un libellé
+  fixe) : ne jamais s'en servir pour `JWT_SECRET`. Les secrets restent saisis dans le tableau de bord et
+  `preserve()` les garde.
+- **Lot 22, santé.** Actuator n'expose que `/actuator/health` (sans détail, sans les sondes liveness/readiness,
+  sans le serveur d'e-mails) ; `SecurityConfig` l'ouvre sans connexion et ferme tout autre `/actuator/**`.
 - **Vérifier un déploiement.** Un fichier de réglages jetable hors du dépôt
   (`docker compose … --env-file chemin/vers/essai.env`), `PORT_HTTP` libre, puis : accueil 200,
   `/factures` renvoie la page de l'application, `/api/clients` 401, inscription 202, lien de
@@ -311,4 +327,5 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
 | 2026-11-19 | 22 (2/7) | `Dockerfile` et `.dockerignore` à la racine (Node, Maven, JRE, non root, `MaxRAMPercentage=75`), port lu dans `PORT` ; tâche `image` dans l'intégration continue, qui tourne aussi sur la branche `railway`. Étape finale construite localement avec le jar reproduit hors Docker, image lancée avec `PORT=9090` (`/factures` 200, uid 10001). |
 | 2026-11-19 | 22 (3/7) | Limite par IP sur l'adresse écrite par le proxy de Railway (`X-Real-IP`, réglage `ENTETE_IP_CLIENT`), jamais sur `X-Forwarded-For` ; `FORWARD_HEADERS` supprimé ; `AdresseIpTest` (3 tests) et `AdresseClientTest` (3 tests). |
 | 2026-11-19 | 22 (4/7) | Connexion à la base par les variables `PG*` de Railway quand `DB_*` manquent ; `ConnexionBaseTest` (3 tests). |
+| 2026-11-19 | 22 (5/7) | Actuator limité à `/actuator/health` (public, sans détail) ; `.railway/railway.ts` (remplaçant de `railway.json`, déprécié) : Dockerfile, santé, redémarrage, une instance en Europe, jamais en veille ; vérifié par `tsc` contre le SDK officiel. Test de santé ajouté à `FrontTest`. |
 | 2026-11-19 | 21 | Dockerfiles back et front, `nginx.conf`, `deploiement/docker-compose.yml`, `.env.exemple`, `construire.sh` ; images construites en intégration continue ; deux défauts de nginx corrigés (contournement de la limite par IP, back-end recréé injoignable). |
