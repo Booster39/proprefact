@@ -55,7 +55,7 @@ Après le dernier lot terminé, ces commandes donnent :
 | `cd frontend && npm test` | 6 fichiers, 16 tests réussis |
 | `cd frontend && npx ng build` | réussi |
 | `./deploiement/essai.sh` (image construite) ; idem avec `POSTGRES_VERSION=18` | `Essai réussi.` : 13 étapes `ok`, de l'accueil au Factur-X, sur PostgreSQL 16 et 18 |
-| intégration continue GitHub sur `railway` (commit `6bfbe49`, exécution n° 10) | 3 tâches réussies : `backend`, `frontend`, `image` (construction complète du `Dockerfile`, essai de bout en bout sur PostgreSQL 16 et 18) |
+| intégration continue GitHub sur `railway` (commit `076acbd`, exécution n° 16, variables `POSTGRESQL_ADDON_*`) | 3 tâches réussies : `backend`, `frontend`, `image` (construction complète du `Dockerfile`, essai de bout en bout sur PostgreSQL 16 et 18) |
 | parcours manuel dans le navigateur (voir ci-dessous) | 23 étapes réussies |
 
 Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherche d'abord pourquoi.
