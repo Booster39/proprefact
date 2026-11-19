@@ -310,6 +310,11 @@ propriétaire décide. Ce qui suit n'a **pas** été fait ; chaque point est à 
   réponses de son équipe sur le forum, les ports SMTP sortants (25, 465, 587) sont bloqués sur les offres Free,
   Trial et Hobby : seule l'offre Pro les ouvre. L'application n'envoie que par SMTP : sur Hobby, aucune
   inscription ne pourrait être confirmée. Écrit dans le guide comme décision du propriétaire.
+- **Lot 22, construction de l'image et réseau.** Sur le commit `0e2d756`, la tâche `image` a échoué : `./mvnw`
+  n'a pas pu télécharger Maven depuis Maven Central (`wget: Failed to fetch`), échec réseau ponctuel, le même
+  Dockerfile ayant réussi juste avant. L'étape Maven part désormais de l'image officielle
+  `maven:3.9.11-eclipse-temurin-21` (même version que le wrapper) : plus de téléchargement de Maven à chaque
+  construction, ni en intégration continue ni sur Railway. Les dépendances viennent toujours de Maven Central.
 - **Vérifier un déploiement.** `./deploiement/essai.sh` lance une pile jetable (projet `proprefact-essai`,
   secrets aléatoires, port 18080) et déroule : santé, accueil, `/factures`, un `.js` en cache, `/api/clients`
   401, inscription 202, lien de confirmation lu dans le journal, confirmation, client, site, contrat, facture

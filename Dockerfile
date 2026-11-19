@@ -12,13 +12,14 @@ COPY frontend/ ./
 RUN npx ng build
 
 # 2. Back-end : jar Spring Boot, avec le front compilé dans static/ (voir <resources> dans backend/pom.xml).
-FROM eclipse-temurin:21-jdk AS back
+# Image Maven officielle (même version que backend/.mvn/wrapper) plutôt que ./mvnw : le wrapper télécharge Maven
+# à chaque construction, et un échec réseau ponctuel sur ce téléchargement faisait échouer toute l'image.
+FROM maven:3.9.11-eclipse-temurin-21 AS back
 WORKDIR /src/backend
-COPY backend/mvnw backend/pom.xml ./
-COPY backend/.mvn .mvn
+COPY backend/pom.xml ./
 COPY backend/src src
 COPY --from=front /src/frontend/dist/frontend/browser /src/frontend/dist/frontend/browser
-RUN ./mvnw -B -ntp -Dmaven.test.skip=true package \
+RUN mvn -B -ntp -Dmaven.test.skip=true package \
     && cp target/proprefact-backend-*.jar /src/app.jar
 
 # 3. Image finale : seulement Java et le jar.

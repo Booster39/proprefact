@@ -1,8 +1,6 @@
 # Contexte du Dockerfile de la racine : seulement les sources du back-end et du front-end.
 *
-!backend/mvnw
 !backend/pom.xml
-!backend/.mvn
 !backend/src
 !frontend
 frontend/node_modules
