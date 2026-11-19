@@ -38,6 +38,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 19 | Hors directives : test d'intégration découpé par sujet | Fait | voir journal |
 | 20 | Hors directives : capture d'écran refaite, boutons d'action visibles | Fait | voir journal |
 | 21 | Hors directives : images Docker et lancement de production | Fait | voir journal |
+| 22 | Hors directives : hébergement Railway, un seul service | En cours (étape 1/7 : front servi par Spring Boot) | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -47,7 +48,7 @@ Après le dernier lot terminé, ces commandes donnent :
 
 | Commande | Résultat |
 |---|---|
-| `cd backend && ./mvnw -B verify` (Docker lancé) | 38 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
+| `cd backend && ./mvnw -B verify` (Docker lancé) | 44 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
 | `cd frontend && npm run format:check` | `All matched files use Prettier code style!` |
 | `cd frontend && npm run lint` | `All files pass linting.` |
 | `cd frontend && npm test` | 6 fichiers, 16 tests réussis |
@@ -238,6 +239,16 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
   recréation du back-end (nouvelle adresse interne), nginx renvoyait 502 jusqu'à son redémarrage ;
   il résout maintenant le nom `backend` par le DNS de Docker (vérifié). Ne pas revenir sur ces deux
   réglages de `frontend/nginx.conf` sans relire leurs commentaires.
+- **Lot 22, front servi par Spring Boot.** Le pom ajoute `../frontend/dist/frontend/browser` aux ressources
+  (`static/` dans le jar) : lancer `npx ng build` dans `frontend/` **avant** `./mvnw package`, sinon le jar ne
+  contient que l'API (Maven ignore le dossier absent sans erreur). `config/FrontConfig` renvoie `index.html` pour
+  toute adresse sans extension hors `/api` et `/actuator` ; les `*.js`, `*.css` et `media/` (noms hachés) sont en
+  cache un an, le reste en `no-cache`. Les tests utilisent `src/test/resources/static/` (un `index.html` et un
+  `.js` de test), placés avant le vrai front dans le classpath de test.
+- **Lot 22, piège de la racine.** `/` n'est pas servi par `FrontConfig` mais par la « page d'accueil » de Spring
+  Boot, qui fait un renvoi interne vers `index.html`. MockMvc n'exécute pas ce renvoi (pas de contenu, pas de
+  type) : `FrontTest` vérifie donc `forwardedUrl("index.html")` pour `/`. En réel, `/` renvoie bien la page
+  (vérifié avec `curl`).
 - **Vérifier un déploiement.** Un fichier de réglages jetable hors du dépôt
   (`docker compose … --env-file chemin/vers/essai.env`), `PORT_HTTP` libre, puis : accueil 200,
   `/factures` renvoie la page de l'application, `/api/clients` 401, inscription 202, lien de
@@ -268,4 +279,5 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
 | 2026-11-16 | 18 | `ConditionsVendeur` regroupe IBAN, BIC et option pour les débits ; test du XML complété. |
 | 2026-11-16 | 19 | `ParcoursFacturationTest` découpé en `ComptesTest`, `FacturationTest`, `DepotTest`, `CloisonnementTest` sur une base `TestIntegration` ; même nombre de tests (38). |
 | 2026-11-16 | 20 | Capture `docs/ecran-factures.png` refaite (5 factures, tous les statuts) ; boutons d'action qui passent à la ligne au lieu de déborder ; page élargie à 1200 points. |
+| 2026-11-19 | 22 (1/7) | Front Angular compilé embarqué dans le jar et servi par Spring Boot (`FrontConfig`) : adresses de l'application renvoyées vers `index.html`, cache long pour les fichiers hachés, `no-cache` pour `index.html`, en-têtes nosniff, X-Frame-Options et Referrer-Policy, compression ; `/api/**` reste protégé ; `FrontTest` (6 tests). Vérifié aussi avec le vrai jar et `curl`. |
 | 2026-11-19 | 21 | Dockerfiles back et front, `nginx.conf`, `deploiement/docker-compose.yml`, `.env.exemple`, `construire.sh` ; images construites en intégration continue ; deux défauts de nginx corrigés (contournement de la limite par IP, back-end recréé injoignable). |

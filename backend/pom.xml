@@ -106,6 +106,17 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <!-- Front-end Angular déjà compilé (npx ng build dans ../frontend), servi par Spring Boot. Si le dossier
+           n'existe pas (front pas encore compilé), Maven l'ignore : le jar ne contient alors que l'API. -->
+      <resource>
+        <directory>${project.basedir}/../frontend/dist/frontend/browser</directory>
+        <targetPath>static</targetPath>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
