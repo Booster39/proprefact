@@ -38,7 +38,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 19 | Hors directives : test d'intégration découpé par sujet | Fait | voir journal |
 | 20 | Hors directives : capture d'écran refaite, boutons d'action visibles | Fait | voir journal |
 | 21 | Hors directives : images Docker et lancement de production | Fait | voir journal |
-| 22 | Hors directives : hébergement Railway, un seul service | En cours (étape 6/7 : ménage de `deploiement/`, essai de bout en bout) | voir journal |
+| 22 | Hors directives : hébergement Railway, un seul service (branche `railway`, non fusionnée) | Fait, sauf ce qui exige un compte Railway | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -54,19 +54,26 @@ Après le dernier lot terminé, ces commandes donnent :
 | `cd frontend && npm test` | 6 fichiers, 16 tests réussis |
 | `cd frontend && npx ng build` | réussi |
 | `./deploiement/essai.sh` (image construite) ; idem avec `POSTGRES_VERSION=18` | `Essai réussi.` : 13 étapes `ok`, de l'accueil au Factur-X, sur PostgreSQL 16 et 18 |
-| intégration continue GitHub sur `main` (commit `0f9be46`) | 2 tâches réussies (`backend`, `frontend`) |
+| intégration continue GitHub sur `railway` (commit `a069deb`) | 3 tâches réussies : `backend`, `frontend`, `image` (construction complète du `Dockerfile`, essai de bout en bout sur PostgreSQL 16 et 18) |
 | parcours manuel dans le navigateur (voir ci-dessous) | 23 étapes réussies |
 
 Si tu obtiens moins bien **avant** de commencer un lot, ne commence pas : cherche d'abord pourquoi.
 
 ## Ce qui reste à faire
 
-Les 21 lots sont terminés. Ce qui suit n'a **pas** été fait ; chaque point
-est un travail à part, à décider avec le propriétaire du projet avant de le commencer.
+Les 22 lots sont terminés. Le lot 22 est sur la branche `railway`, **non fusionnée** dans `main` : le
+propriétaire décide. Ce qui suit n'a **pas** été fait ; chaque point est à décider avec lui.
 
-- **Hébergement.** Les images et le lancement sont prêts (lot 21), mais aucun hébergeur n'est
-  choisi : machine, nom de domaine, HTTPS, serveur d'envoi d'e-mails, sauvegardes automatiques de
-  la base. À décider avec le propriétaire.
+- **Mise en ligne sur Railway** : à faire par le propriétaire en suivant `DEPLOIEMENT-RAILWAY.md` (aucun
+  assistant n'avait de compte Railway ; rien n'a été déployé). Après la mise en ligne, faire la vérification 6
+  de l'étape 8 du guide (un `X-Real-IP` inventé doit être ignoré par le proxy de Railway) et noter ici le
+  résultat.
+- **Offre Railway et e-mails.** Railway bloque le SMTP sortant hors offre Pro (documentation « Outbound
+  Networking »). Soit offre Pro (recommandé, aucun code à changer), soit écrire un envoi d'e-mails par l'API
+  HTTPS d'un fournisseur (nouvelle implémentation de `Messagerie`).
+- **Sauvegardes hors de Railway** (export `pg_dump` régulier vers un stockage externe) : factures à conserver
+  10 ans.
+- **`.railway/railway.ts`** : jamais appliqué à un vrai projet ; le format est en bêta chez Railway.
 - **Fonctions métier** listées dans le README, section « Reste à faire avant de vendre ».
 
 ## Écarts et pièges rencontrés
@@ -299,6 +306,10 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
   unique (service `app`, port 8080) avec PostgreSQL, en lui passant les mêmes variables `PG*` que Railway. Le
   volume garde le chemin du lot 21 (`/var/lib/postgresql/data`) pour ne pas « perdre » une base déjà installée ;
   PostgreSQL 18 exige `/var/lib/postgresql` (`POSTGRES_DONNEES`, réglé par `essai.sh`).
+- **Lot 22, SMTP sur Railway.** D'après la documentation de Railway (« Outbound Networking ») et de nombreuses
+  réponses de son équipe sur le forum, les ports SMTP sortants (25, 465, 587) sont bloqués sur les offres Free,
+  Trial et Hobby : seule l'offre Pro les ouvre. L'application n'envoie que par SMTP : sur Hobby, aucune
+  inscription ne pourrait être confirmée. Écrit dans le guide comme décision du propriétaire.
 - **Vérifier un déploiement.** `./deploiement/essai.sh` lance une pile jetable (projet `proprefact-essai`,
   secrets aléatoires, port 18080) et déroule : santé, accueil, `/factures`, un `.js` en cache, `/api/clients`
   401, inscription 202, lien de confirmation lu dans le journal, confirmation, client, site, contrat, facture
@@ -338,4 +349,5 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
 | 2026-11-19 | 22 (4/7) | Connexion à la base par les variables `PG*` de Railway quand `DB_*` manquent ; `ConnexionBaseTest` (3 tests). |
 | 2026-11-19 | 22 (5/7) | Actuator limité à `/actuator/health` (public, sans détail) ; `.railway/railway.ts` (remplaçant de `railway.json`, déprécié) : Dockerfile, santé, redémarrage, une instance en Europe, jamais en veille ; vérifié par `tsc` contre le SDK officiel. Test de santé ajouté à `FrontTest`. |
 | 2026-11-19 | 22 (6/7) | nginx et les deux images supprimés ; `deploiement/docker-compose.yml` avec l'image unique ; `deploiement/essai.sh` (parcours de bout en bout) réussi en local sur PostgreSQL 16 et 18 et ajouté à l'intégration continue ; README, section « Déploiement », réécrite. |
+| 2026-11-19 | 22 (7/7) | Guide `DEPLOIEMENT-RAILWAY.md` pour le propriétaire (offre Pro à cause du SMTP, projet en Europe, PostgreSQL, dépôt GitHub, variables, une instance sans veille, domaine, sauvegardes, mises à jour, vérifications, configuration en fichier) ; ce qui n'a pas pu être vérifié y est listé. |
 | 2026-11-19 | 21 | Dockerfiles back et front, `nginx.conf`, `deploiement/docker-compose.yml`, `.env.exemple`, `construire.sh` ; images construites en intégration continue ; deux défauts de nginx corrigés (contournement de la limite par IP, back-end recréé injoignable). |
