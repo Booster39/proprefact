@@ -80,32 +80,39 @@ dans `AVANCEMENT.md`.
 
 ## Déploiement
 
-Le dossier `deploiement/` lance l'application complète avec Docker : une base PostgreSQL, le back-end, et nginx
-qui sert le front-end et relaie `/api`. Seul nginx est exposé ; la base et le back-end ne sont joignables
-qu'entre conteneurs.
+L'application est **une seule image** (`Dockerfile` à la racine) : Spring Boot sert l'API et le front-end Angular
+compilé à la même adresse, sans nginx. Elle est hébergée sur **Railway**, avec la base PostgreSQL de Railway :
+le pas à pas est dans [DEPLOIEMENT-RAILWAY.md](DEPLOIEMENT-RAILWAY.md). Chaque `git push` sur `main` y déclenche
+la construction et la mise en ligne ; les migrations Flyway s'appliquent au démarrage.
+
+- **Une seule instance, jamais en veille** : la limite de tentatives de connexion est en mémoire et la relance
+  des dépôts tourne chaque minute dans l'application.
+- `.railway/railway.ts` décrit le service Railway (Dockerfile, santé sur `/actuator/health`, redémarrage, région
+  Europe, une instance) ; il s'applique avec la CLI Railway, pas à chaque `git push`.
+- L'intégration continue construit l'image et la lance contre PostgreSQL 16 et 18 (`deploiement/essai.sh`).
+
+Pour essayer la production en local (ou héberger ailleurs), `deploiement/` lance l'image avec PostgreSQL :
 
 ```bash
-cp deploiement/.env.exemple deploiement/.env   # puis remplir chaque valeur (secrets : jamais commités)
-./deploiement/construire.sh                     # tests, compilation, puis images Docker
-docker compose -f deploiement/docker-compose.yml up -d
+./deploiement/essai.sh                             # essai jetable de bout en bout, tout est supprimé à la fin
+cp deploiement/.env.exemple deploiement/.env       # puis remplir chaque valeur (secrets : jamais commités)
+docker compose -f deploiement/docker-compose.yml up -d --build   # application sur http://localhost:8080
 ```
 
-- Les images embarquent le jar et le front déjà compilés : `construire.sh` les produit avec les outils du
-  projet (tests compris) avant de construire les images, qui ne téléchargent rien.
-- Les données sont dans le volume Docker `proprefact-production_donnees`. Le sauvegarder, par exemple :
+- La construction télécharge les dépendances npm et Maven : il faut un accès à Internet.
+- Les données sont dans le volume Docker `proprefact-production_donnees`. Sauvegarde, par exemple :
   `docker compose -f deploiement/docker-compose.yml exec -T db pg_dump -U proprefact proprefact > sauvegarde.sql`.
-- HTTPS n'est pas géré ici : placer devant nginx le proxy HTTPS de l'hébergeur (ou Caddy, Traefik…). Dans ce
-  cas, lire le commentaire de `frontend/nginx.conf` sur l'adresse IP réelle du client.
-- Mise à jour : relancer `construire.sh` puis la commande `up -d` ; les migrations Flyway s'appliquent au
-  démarrage du back-end.
+- HTTPS n'est pas géré ici. Si un proxy HTTPS est placé devant, lire le commentaire de `ENTETE_IP_CLIENT` dans
+  `deploiement/docker-compose.yml`.
 
 ## Configuration de production
 
 | Variable | Rôle |
 |---|---|
 | `DB_URL`, `DB_USER`, `DB_PASSWORD` | Connexion PostgreSQL ; à défaut, `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD` (fournies par Railway) |
+| `PORT` | Port d'écoute (8080 par défaut ; Railway le fournit) |
 | `JWT_SECRET` | Secret de signature des jetons, 32 caractères minimum, obligatoire |
-| `APP_URL` | Adresse publique du front-end, utilisée dans les liens envoyés par e-mail |
+| `APP_URL` | Adresse publique de l'application (sans `/` final), utilisée dans les liens envoyés par e-mail |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_EXPEDITEUR` | Serveur SMTP d'envoi des e-mails |
 | `ENTETE_IP_CLIENT` | En-tête où le proxy de l'hébergeur écrit l'adresse IP du client (`X-Real-IP` sur Railway), pour limiter les tentatives sur la vraie adresse ; vide sans proxy |
 

@@ -1,3 +1,0 @@
-# Seul le jar construit entre dans l'image.
-*
-!target/proprefact-backend-*.jar

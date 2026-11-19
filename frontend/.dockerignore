@@ -1,4 +1,0 @@
-# Seuls le front compilé et la configuration de nginx entrent dans l'image.
-*
-!dist/frontend/browser
-!nginx.conf

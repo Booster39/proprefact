@@ -38,7 +38,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 19 | Hors directives : test d'intégration découpé par sujet | Fait | voir journal |
 | 20 | Hors directives : capture d'écran refaite, boutons d'action visibles | Fait | voir journal |
 | 21 | Hors directives : images Docker et lancement de production | Fait | voir journal |
-| 22 | Hors directives : hébergement Railway, un seul service | En cours (étape 5/7 : santé et configuration Railway) | voir journal |
+| 22 | Hors directives : hébergement Railway, un seul service | En cours (étape 6/7 : ménage de `deploiement/`, essai de bout en bout) | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -53,7 +53,7 @@ Après le dernier lot terminé, ces commandes donnent :
 | `cd frontend && npm run lint` | `All files pass linting.` |
 | `cd frontend && npm test` | 6 fichiers, 16 tests réussis |
 | `cd frontend && npx ng build` | réussi |
-| `./deploiement/construire.sh` puis `docker compose -f deploiement/docker-compose.yml up -d` | 3 conteneurs démarrés, parcours API à travers nginx réussi |
+| `./deploiement/essai.sh` (image construite) ; idem avec `POSTGRES_VERSION=18` | `Essai réussi.` : 13 étapes `ok`, de l'accueil au Factur-X, sur PostgreSQL 16 et 18 |
 | intégration continue GitHub sur `main` (commit `0f9be46`) | 2 tâches réussies (`backend`, `frontend`) |
 | parcours manuel dans le navigateur (voir ci-dessous) | 23 étapes réussies |
 
@@ -238,7 +238,8 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
   maintenant l'en-tête par l'adresse réelle : blocage à la 31e tentative (vérifié). (2) Après
   recréation du back-end (nouvelle adresse interne), nginx renvoyait 502 jusqu'à son redémarrage ;
   il résout maintenant le nom `backend` par le DNS de Docker (vérifié). Ne pas revenir sur ces deux
-  réglages de `frontend/nginx.conf` sans relire leurs commentaires.
+  réglages de `frontend/nginx.conf` sans relire leurs commentaires. **Lot 22 :** nginx et les deux images ont
+  été supprimés (image unique) ; la leçon (1) est reprise dans `web/AdresseClient`.
 - **Lot 22, front servi par Spring Boot.** Le pom ajoute `../frontend/dist/frontend/browser` aux ressources
   (`static/` dans le jar) : lancer `npx ng build` dans `frontend/` **avant** `./mvnw package`, sinon le jar ne
   contient que l'API (Maven ignore le dossier absent sans erreur). `config/FrontConfig` renvoie `index.html` pour
@@ -293,11 +294,19 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
   `preserve()` les garde.
 - **Lot 22, santé.** Actuator n'expose que `/actuator/health` (sans détail, sans les sondes liveness/readiness,
   sans le serveur d'e-mails) ; `SecurityConfig` l'ouvre sans connexion et ferme tout autre `/actuator/**`.
-- **Vérifier un déploiement.** Un fichier de réglages jetable hors du dépôt
-  (`docker compose … --env-file chemin/vers/essai.env`), `PORT_HTTP` libre, puis : accueil 200,
-  `/factures` renvoie la page de l'application, `/api/clients` 401, inscription 202, lien de
-  confirmation dans `docker compose … logs backend`, facture validée, Factur-X téléchargé.
-  Arrêter avec `down -v` (supprime le volume de la pile d'essai).
+- **Lot 22, `deploiement/`.** `construire.sh`, `frontend/nginx.conf`, `frontend/Dockerfile`,
+  `backend/Dockerfile` et leurs `.dockerignore` sont supprimés. `deploiement/docker-compose.yml` lance l'image
+  unique (service `app`, port 8080) avec PostgreSQL, en lui passant les mêmes variables `PG*` que Railway. Le
+  volume garde le chemin du lot 21 (`/var/lib/postgresql/data`) pour ne pas « perdre » une base déjà installée ;
+  PostgreSQL 18 exige `/var/lib/postgresql` (`POSTGRES_DONNEES`, réglé par `essai.sh`).
+- **Vérifier un déploiement.** `./deploiement/essai.sh` lance une pile jetable (projet `proprefact-essai`,
+  secrets aléatoires, port 18080) et déroule : santé, accueil, `/factures`, un `.js` en cache, `/api/clients`
+  401, inscription 202, lien de confirmation lu dans le journal, confirmation, client, site, contrat, facture
+  générée puis validée, Factur-X téléchargé (PDF avec `factur-x.xml`). Elle est supprimée à la fin (`down -v`),
+  y compris en cas d'échec (le journal de l'application est alors affiché). Ici, sans réseau dans les
+  conteneurs, construire d'abord l'image comme indiqué plus haut (étape finale seule) puis lancer
+  `SANS_CONSTRUCTION=1 ./deploiement/essai.sh`. L'intégration continue fait la construction complète et
+  l'essai, sur PostgreSQL 16 et 18.
 
 ## Journal
 
@@ -328,4 +337,5 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
 | 2026-11-19 | 22 (3/7) | Limite par IP sur l'adresse écrite par le proxy de Railway (`X-Real-IP`, réglage `ENTETE_IP_CLIENT`), jamais sur `X-Forwarded-For` ; `FORWARD_HEADERS` supprimé ; `AdresseIpTest` (3 tests) et `AdresseClientTest` (3 tests). |
 | 2026-11-19 | 22 (4/7) | Connexion à la base par les variables `PG*` de Railway quand `DB_*` manquent ; `ConnexionBaseTest` (3 tests). |
 | 2026-11-19 | 22 (5/7) | Actuator limité à `/actuator/health` (public, sans détail) ; `.railway/railway.ts` (remplaçant de `railway.json`, déprécié) : Dockerfile, santé, redémarrage, une instance en Europe, jamais en veille ; vérifié par `tsc` contre le SDK officiel. Test de santé ajouté à `FrontTest`. |
+| 2026-11-19 | 22 (6/7) | nginx et les deux images supprimés ; `deploiement/docker-compose.yml` avec l'image unique ; `deploiement/essai.sh` (parcours de bout en bout) réussi en local sur PostgreSQL 16 et 18 et ajouté à l'intégration continue ; README, section « Déploiement », réécrite. |
 | 2026-11-19 | 21 | Dockerfiles back et front, `nginx.conf`, `deploiement/docker-compose.yml`, `.env.exemple`, `construire.sh` ; images construites en intégration continue ; deux défauts de nginx corrigés (contournement de la limite par IP, back-end recréé injoignable). |
