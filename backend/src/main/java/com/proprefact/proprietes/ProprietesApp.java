@@ -29,9 +29,14 @@ public record ProprietesApp(
 
     public record Mail(@NotBlank String expediteur) {}
 
-    /** Limites sur les points d'entrée d'authentification, par fenêtre de 15 minutes. */
+    /**
+     * Limites sur les points d'entrée d'authentification, par fenêtre de 15 minutes. {@code enteteIpClient} : nom de
+     * l'en-tête où le proxy de l'hébergeur écrit l'adresse IP du client (vide : adresse de la connexion).
+     */
     public record Auth(
-            @Positive int maxRequetesParIp, @Positive int maxEchecsParEmail) {}
+            @Positive int maxRequetesParIp,
+            @Positive int maxEchecsParEmail,
+            @DefaultValue("") String enteteIpClient) {}
 
     /** Relance automatique des dépôts restés en cours, et son intervalle en millisecondes. */
     public record Depot(

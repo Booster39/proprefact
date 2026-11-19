@@ -38,8 +38,8 @@ services:
       MAIL_USER: ${MAIL_USER:-}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_EXPEDITEUR: ${MAIL_EXPEDITEUR:-no-reply@localhost}
-      # Le back-end est derrière nginx : il lit l'adresse IP réelle dans X-Forwarded-For.
-      FORWARD_HEADERS: framework
+      # Le back-end est derrière nginx : il lit l'adresse IP réelle dans X-Real-IP, que nginx écrit.
+      ENTETE_IP_CLIENT: X-Real-IP
       TZ: Europe/Paris
     # Pas de port publié : le back-end n'est joignable qu'à travers nginx.
 

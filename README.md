@@ -107,7 +107,7 @@ docker compose -f deploiement/docker-compose.yml up -d
 | `JWT_SECRET` | Secret de signature des jetons, 32 caractères minimum, obligatoire |
 | `APP_URL` | Adresse publique du front-end, utilisée dans les liens envoyés par e-mail |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_EXPEDITEUR` | Serveur SMTP d'envoi des e-mails |
-| `FORWARD_HEADERS` | `framework` derrière un proxy inverse, pour limiter les tentatives sur la vraie adresse IP |
+| `ENTETE_IP_CLIENT` | En-tête où le proxy de l'hébergeur écrit l'adresse IP du client (`X-Real-IP` sur Railway), pour limiter les tentatives sur la vraie adresse ; vide sans proxy |
 
 Sans `MAIL_HOST`, les e-mails (dont les liens de confirmation) sont seulement écrits dans le journal :
 pratique en développement, à ne jamais laisser en production.

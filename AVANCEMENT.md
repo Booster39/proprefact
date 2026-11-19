@@ -38,7 +38,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 19 | Hors directives : test d'intégration découpé par sujet | Fait | voir journal |
 | 20 | Hors directives : capture d'écran refaite, boutons d'action visibles | Fait | voir journal |
 | 21 | Hors directives : images Docker et lancement de production | Fait | voir journal |
-| 22 | Hors directives : hébergement Railway, un seul service | En cours (étape 2/7 : Dockerfile de la racine) | voir journal |
+| 22 | Hors directives : hébergement Railway, un seul service | En cours (étape 3/7 : adresse IP réelle) | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -48,7 +48,7 @@ Après le dernier lot terminé, ces commandes donnent :
 
 | Commande | Résultat |
 |---|---|
-| `cd backend && ./mvnw -B verify` (Docker lancé) | 44 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
+| `cd backend && ./mvnw -B verify` (Docker lancé) | 50 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
 | `cd frontend && npm run format:check` | `All matched files use Prettier code style!` |
 | `cd frontend && npm run lint` | `All files pass linting.` |
 | `cd frontend && npm test` | 6 fichiers, 16 tests réussis |
@@ -258,6 +258,19 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
   `docker buildx build --load --build-context back=<dossier> -t proprefact .` : le contexte nommé `back`
   remplace l'étape Maven et seule l'étape finale du vrai Dockerfile est construite. La construction complète
   n'est prouvée que par la tâche `image` de l'intégration continue.
+- **Lot 22, adresse IP derrière Railway.** `web/AdresseClient` lit l'adresse du client dans UN en-tête choisi
+  (`ENTETE_IP_CLIENT`, propriété `app.auth.entete-ip-client`) : `X-Real-IP` sur Railway. Valeur absente ou
+  qui n'est pas une adresse (liste, texte) : adresse de la connexion. `X-Forwarded-For` n'est plus jamais lu et
+  `server.forward-headers-strategy=none` est fixé (la variable `FORWARD_HEADERS` n'existe plus) : en mode
+  `framework`, Spring prend la première adresse de `X-Forwarded-For`, que le client peut inventer si le proxy
+  complète l'en-tête. Source : la page officielle « Public Networking — Specs & Limits » de Railway liste
+  `X-Real-IP` (adresse du client) parmi les en-têtes posés par le proxy ; qu'il **écrase** une valeur envoyée
+  par le client n'est affirmé que par le personnel de Railway sur leur forum (Central Station), pas dans la doc.
+  Incertitude écrite dans `DEPLOIEMENT-RAILWAY.md`. `docs.railway.com` n'était pas joignable depuis
+  l'environnement de travail : informations obtenues par recherche web.
+- **Lot 22, `AdresseIpTest`.** Seule classe d'intégration avec ses propres réglages (`@TestPropertySource` :
+  limite de 3, en-tête `X-Real-IP`) : elle a son propre contexte Spring et sa propre base PostgreSQL, ce qui
+  ajoute environ 8 secondes. Elle échoue si l'on relit `X-Forwarded-For` (vérifié en simulant le défaut).
 - **Vérifier un déploiement.** Un fichier de réglages jetable hors du dépôt
   (`docker compose … --env-file chemin/vers/essai.env`), `PORT_HTTP` libre, puis : accueil 200,
   `/factures` renvoie la page de l'application, `/api/clients` 401, inscription 202, lien de
@@ -290,4 +303,5 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
 | 2026-11-16 | 20 | Capture `docs/ecran-factures.png` refaite (5 factures, tous les statuts) ; boutons d'action qui passent à la ligne au lieu de déborder ; page élargie à 1200 points. |
 | 2026-11-19 | 22 (1/7) | Front Angular compilé embarqué dans le jar et servi par Spring Boot (`FrontConfig`) : adresses de l'application renvoyées vers `index.html`, cache long pour les fichiers hachés, `no-cache` pour `index.html`, en-têtes nosniff, X-Frame-Options et Referrer-Policy, compression ; `/api/**` reste protégé ; `FrontTest` (6 tests). Vérifié aussi avec le vrai jar et `curl`. |
 | 2026-11-19 | 22 (2/7) | `Dockerfile` et `.dockerignore` à la racine (Node, Maven, JRE, non root, `MaxRAMPercentage=75`), port lu dans `PORT` ; tâche `image` dans l'intégration continue, qui tourne aussi sur la branche `railway`. Étape finale construite localement avec le jar reproduit hors Docker, image lancée avec `PORT=9090` (`/factures` 200, uid 10001). |
+| 2026-11-19 | 22 (3/7) | Limite par IP sur l'adresse écrite par le proxy de Railway (`X-Real-IP`, réglage `ENTETE_IP_CLIENT`), jamais sur `X-Forwarded-For` ; `FORWARD_HEADERS` supprimé ; `AdresseIpTest` (3 tests) et `AdresseClientTest` (3 tests). |
 | 2026-11-19 | 21 | Dockerfiles back et front, `nginx.conf`, `deploiement/docker-compose.yml`, `.env.exemple`, `construire.sh` ; images construites en intégration continue ; deux défauts de nginx corrigés (contournement de la limite par IP, back-end recréé injoignable). |

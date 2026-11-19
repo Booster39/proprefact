@@ -28,12 +28,15 @@ class AuthController {
 
     private final AuthService auth;
     private final LimiteurTentatives limiteur;
+    private final AdresseClient adresseClient;
     private final int maxParIp;
     private final int maxEchecsParEmail;
 
-    AuthController(AuthService auth, LimiteurTentatives limiteur, ProprietesApp proprietes) {
+    AuthController(
+            AuthService auth, LimiteurTentatives limiteur, AdresseClient adresseClient, ProprietesApp proprietes) {
         this.auth = auth;
         this.limiteur = limiteur;
+        this.adresseClient = adresseClient;
         this.maxParIp = proprietes.auth().maxRequetesParIp();
         this.maxEchecsParEmail = proprietes.auth().maxEchecsParEmail();
     }
@@ -77,7 +80,7 @@ class AuthController {
     }
 
     private void limiterParIp(HttpServletRequest http) {
-        if (!limiteur.tenter("ip:" + http.getRemoteAddr(), maxParIp, FENETRE)) {
+        if (!limiteur.tenter("ip:" + adresseClient.de(http), maxParIp, FENETRE)) {
             throw tropDeTentatives();
         }
     }
