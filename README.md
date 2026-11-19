@@ -103,7 +103,7 @@ docker compose -f deploiement/docker-compose.yml up -d
 
 | Variable | Rôle |
 |---|---|
-| `DB_URL`, `DB_USER`, `DB_PASSWORD` | Connexion PostgreSQL |
+| `DB_URL`, `DB_USER`, `DB_PASSWORD` | Connexion PostgreSQL ; à défaut, `PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD` (fournies par Railway) |
 | `JWT_SECRET` | Secret de signature des jetons, 32 caractères minimum, obligatoire |
 | `APP_URL` | Adresse publique du front-end, utilisée dans les liens envoyés par e-mail |
 | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, `MAIL_EXPEDITEUR` | Serveur SMTP d'envoi des e-mails |

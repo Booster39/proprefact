@@ -38,7 +38,7 @@ Ce fichier dit où en est l'application de `DIRECTIVES_CORRECTIONS.md`. Il est m
 | 19 | Hors directives : test d'intégration découpé par sujet | Fait | voir journal |
 | 20 | Hors directives : capture d'écran refaite, boutons d'action visibles | Fait | voir journal |
 | 21 | Hors directives : images Docker et lancement de production | Fait | voir journal |
-| 22 | Hors directives : hébergement Railway, un seul service | En cours (étape 3/7 : adresse IP réelle) | voir journal |
+| 22 | Hors directives : hébergement Railway, un seul service | En cours (étape 4/7 : base de données Railway) | voir journal |
 
 États possibles : `À faire`, `En cours` (avec l'étape atteinte), `Fait`, `Bloqué : raison`.
 
@@ -48,7 +48,7 @@ Après le dernier lot terminé, ces commandes donnent :
 
 | Commande | Résultat |
 |---|---|
-| `cd backend && ./mvnw -B verify` (Docker lancé) | 50 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
+| `cd backend && ./mvnw -B verify` (Docker lancé) | 53 tests, 0 échec, `BUILD SUCCESS`, contrôle Spotless réussi |
 | `cd frontend && npm run format:check` | `All matched files use Prettier code style!` |
 | `cd frontend && npm run lint` | `All files pass linting.` |
 | `cd frontend && npm test` | 6 fichiers, 16 tests réussis |
@@ -271,6 +271,12 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
 - **Lot 22, `AdresseIpTest`.** Seule classe d'intégration avec ses propres réglages (`@TestPropertySource` :
   limite de 3, en-tête `X-Real-IP`) : elle a son propre contexte Spring et sa propre base PostgreSQL, ce qui
   ajoute environ 8 secondes. Elle échoue si l'on relit `X-Forwarded-For` (vérifié en simulant le défaut).
+- **Lot 22, base Railway.** `spring.datasource.*` lit `DB_URL`, `DB_USER`, `DB_PASSWORD`, et à défaut les
+  variables standard `PGHOST`, `PGPORT` (5432 par défaut), `PGDATABASE`, `PGUSER`, `PGPASSWORD` que fournit le
+  service PostgreSQL de Railway. Raison : sur Railway il suffit de cinq références `${{Postgres.PGHOST}}`…, et
+  le format `.railway/railway.ts` ne sait pas composer une chaîne (`jdbc:postgresql://…`) à partir de
+  références (vérifié dans le SDK `railway` 3.17.0 : une référence est un objet, pas un texte). Sans aucune de
+  ces variables, le démarrage échoue toujours (règle du lot 9). `ConnexionBaseTest` (3 tests) le vérifie.
 - **Vérifier un déploiement.** Un fichier de réglages jetable hors du dépôt
   (`docker compose … --env-file chemin/vers/essai.env`), `PORT_HTTP` libre, puis : accueil 200,
   `/factures` renvoie la page de l'application, `/api/clients` 401, inscription 202, lien de
@@ -304,4 +310,5 @@ est un travail à part, à décider avec le propriétaire du projet avant de le 
 | 2026-11-19 | 22 (1/7) | Front Angular compilé embarqué dans le jar et servi par Spring Boot (`FrontConfig`) : adresses de l'application renvoyées vers `index.html`, cache long pour les fichiers hachés, `no-cache` pour `index.html`, en-têtes nosniff, X-Frame-Options et Referrer-Policy, compression ; `/api/**` reste protégé ; `FrontTest` (6 tests). Vérifié aussi avec le vrai jar et `curl`. |
 | 2026-11-19 | 22 (2/7) | `Dockerfile` et `.dockerignore` à la racine (Node, Maven, JRE, non root, `MaxRAMPercentage=75`), port lu dans `PORT` ; tâche `image` dans l'intégration continue, qui tourne aussi sur la branche `railway`. Étape finale construite localement avec le jar reproduit hors Docker, image lancée avec `PORT=9090` (`/factures` 200, uid 10001). |
 | 2026-11-19 | 22 (3/7) | Limite par IP sur l'adresse écrite par le proxy de Railway (`X-Real-IP`, réglage `ENTETE_IP_CLIENT`), jamais sur `X-Forwarded-For` ; `FORWARD_HEADERS` supprimé ; `AdresseIpTest` (3 tests) et `AdresseClientTest` (3 tests). |
+| 2026-11-19 | 22 (4/7) | Connexion à la base par les variables `PG*` de Railway quand `DB_*` manquent ; `ConnexionBaseTest` (3 tests). |
 | 2026-11-19 | 21 | Dockerfiles back et front, `nginx.conf`, `deploiement/docker-compose.yml`, `.env.exemple`, `construire.sh` ; images construites en intégration continue ; deux défauts de nginx corrigés (contournement de la limite par IP, back-end recréé injoignable). |
